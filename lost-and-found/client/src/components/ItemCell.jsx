@@ -1,10 +1,9 @@
 import './ItemCell.css';
-
-const SERVER = 'http://localhost:4000';
+import { SERVER_BASE } from '../lib/api';
 
 export default function ItemCell({ image, item, category, dateSubmitted, storage }) {
   const src = image
-    ? image.startsWith('http') ? image : `${SERVER}${image}`
+    ? image.startsWith('http') ? image : `${SERVER_BASE}${image}`
     : null;
 
   const formatDate = (val) => {

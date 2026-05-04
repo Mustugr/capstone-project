@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import './ModalOverview.css';
-import { api } from '../lib/api';
+import { api, SERVER_BASE } from '../lib/api';
 import ItemCell from './ItemCell';
 
 export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
@@ -119,7 +119,7 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
                       <tr className='item-set' key={item.id}>
                         <td>
                           {item.image_url
-                            ? <img src={`http://localhost:4000${item.image_url}`} alt={item.item_name} />
+                            ? <img src={`${SERVER_BASE}${item.image_url}`} alt={item.item_name} />
                             : <span style={{ fontSize: 12, color: 'var(--muted)' }}>—</span>
                           }
                         </td>
