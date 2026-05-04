@@ -83,16 +83,16 @@ router.post('/:reportId', requireAuth, async (req, res) => {
   }
 
   try {
-    // Verify student owns the report (admins can message any report)
-    if (req.user.role !== 'admin') {
-      const report = await pool.query(
-        'SELECT student_id FROM lost_reports WHERE id = $1',
-        [req.params.reportId]
-      );
-      if (report.rows.length === 0) return res.status(404).json({ error: 'Report not found' });
-      if (report.rows[0].student_id !== req.user.id) {
-        return res.status(403).json({ error: 'Access denied' });
-      }
+    const report = await pool.query(
+      'SELECT student_id FROM lost_reports WHERE id = $1',
+      [req.params.reportId]
+    );
+    if (report.rows.length === 0) return res.status(404).json({ error: 'Report not found' });
+
+    const ownerStudentId = report.rows[0].student_id;
+
+    if (req.user.role !== 'admin' && ownerStudentId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     const result = await pool.query(
@@ -101,7 +101,16 @@ router.post('/:reportId', requireAuth, async (req, res) => {
        RETURNING *`,
       [req.params.reportId, req.user.id, req.user.role, content.trim()]
     );
-    res.status(201).json(result.rows[0]);
+
+    const message = result.rows[0];
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to('admin').emit('message:new', message);
+      io.to(`user:${ownerStudentId}`).emit('message:new', message);
+    }
+
+    res.status(201).json(message);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

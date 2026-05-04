@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -9,6 +12,7 @@ const foundItemsRoutes = require('./routes/foundItems');
 const messagesRoutes = require('./routes/messages');
 
 const app = express();
+const httpServer = http.createServer(app);
 
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
@@ -38,5 +42,30 @@ app.use('/api/messages', messagesRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
+const io = new Server(httpServer, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
+});
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error('No token'));
+  try {
+    socket.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    next(new Error('Invalid token'));
+  }
+});
+
+io.on('connection', (socket) => {
+  socket.join(`user:${socket.user.id}`);
+  if (socket.user.role === 'admin') socket.join('admin');
+});
+
+app.set('io', io);
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
