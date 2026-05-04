@@ -49,8 +49,24 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
     }
   };
 
+  const handleResolve = async () => {
+    if (!report || busy) return;
+    if (!window.confirm('Mark this report as resolved? The student has picked up the item.')) return;
+    setBusy(true);
+    try {
+      const updated = await api.patch(`/reports/${report.id}/resolve`, {});
+      onMatch(updated);
+      const items = await api.get('/found-items');
+      setFoundItems(items);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const formatDate = (iso) =>
-    iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '—';
 
   const statusClass = (status) => {
     if (status === 'Pending') return 'status-badge status-pending';
@@ -83,6 +99,13 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
               <span className={statusClass(report.status)} style={{ marginTop: 12, display: 'inline-block' }}>
                 {report.status}
               </span>
+              {report.status === 'Matched' && (
+                <div style={{ marginTop: 12 }}>
+                  <button type='button' disabled={busy} onClick={handleResolve}>
+                    {busy ? 'Saving...' : 'Student Picked Up'}
+                  </button>
+                </div>
+              )}
               {report.student_name && (
                 <p style={{ fontSize: 13, marginTop: 12, color: 'var(--muted)' }}>
                   Student: {report.student_name}
@@ -141,11 +164,13 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
           </div>
         ) : (
           <div className='MatchedItem'>
-            <div className="button-container">
-              <button type='button' disabled={busy} onClick={handleClearMatch}>
-                {busy ? 'Clearing...' : 'Clear Match'}
-              </button>
-            </div>
+            {report.status !== 'Resolved' && (
+              <div className="button-container">
+                <button type='button' disabled={busy} onClick={handleClearMatch}>
+                  {busy ? 'Clearing...' : 'Clear Match'}
+                </button>
+              </div>
+            )}
             {matchedItem && (
               <div className="Item-container">
                 <ItemCell

@@ -8,7 +8,7 @@ export default function ItemCell({ image, item, category, dateSubmitted, storage
 
   const formatDate = (val) => {
     if (!val) return '—';
-    try { return new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+    try { return new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }); }
     catch { return val; }
   };
 

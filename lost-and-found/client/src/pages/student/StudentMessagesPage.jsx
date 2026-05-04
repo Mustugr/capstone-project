@@ -63,7 +63,7 @@ export default function StudentMessagesPage() {
     if (!message.trim() || !selectedId) return;
     try {
       const sent = await api.post(`/messages/${selectedId}`, { content: message.trim() });
-      setMessages((prev) => [...prev, sent]);
+      setMessages((prev) => prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]);
       setMessage("");
       // Update last_message in conversation list
       setConversations((prev) =>

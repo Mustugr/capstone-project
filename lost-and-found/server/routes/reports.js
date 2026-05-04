@@ -158,9 +158,14 @@ router.patch('/:id/resolve', requireAdmin, async (req, res) => {
     await client.query('BEGIN');
 
     const reportResult = await client.query(
-      `UPDATE lost_reports SET status = 'Resolved' WHERE id = $1 RETURNING matched_item_id`,
+      `UPDATE lost_reports SET status = 'Resolved' WHERE id = $1 RETURNING *`,
       [req.params.id]
     );
+
+    if (reportResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Report not found' });
+    }
 
     const { matched_item_id } = reportResult.rows[0];
     if (matched_item_id) {
@@ -171,7 +176,7 @@ router.patch('/:id/resolve', requireAdmin, async (req, res) => {
     }
 
     await client.query('COMMIT');
-    res.json({ message: 'Report resolved' });
+    res.json(reportResult.rows[0]);
   } catch (err) {
     await client.query('ROLLBACK');
     console.error(err);

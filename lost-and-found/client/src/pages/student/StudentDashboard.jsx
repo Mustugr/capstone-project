@@ -27,7 +27,7 @@ export default function StudentDashboard() {
   const count = (status) => reports.filter((r) => r.status === status).length;
 
   const formatDate = (iso) =>
-    iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+    iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : "—";
 
   return (
     <div className="student-layout">
