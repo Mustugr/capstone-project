@@ -1,0 +1,192 @@
+.student-messages {
+  flex: 1;
+  padding: 36px 32px;
+  min-height: 0;
+}
+
+.student-messages__layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  height: calc(100vh - 72px - 36px);
+  min-height: 560px;
+}
+
+/* ── Left panel ── */
+.student-messages__left {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.student-messages__left-header {
+  padding: 22px 20px;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.08);
+}
+
+.student-messages__left-title {
+  margin: 4px 0 0;
+  font-family: var(--student-heading-font);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: #111111;
+}
+
+.student-messages__conversation {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.06);
+  text-align: left;
+  border-left: 3px solid transparent;
+  transition: background 180ms ease, border-color 180ms ease;
+  cursor: pointer;
+}
+
+.student-messages__conversation:hover {
+  background: #f8f9fb;
+}
+
+.student-messages__conversation.active {
+  background: #f5f1fc;
+  border-left-color: var(--primary);
+}
+
+.student-messages__conversation-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.student-messages__conversation-top strong {
+  font-family: var(--student-heading-font);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #111111;
+}
+
+.student-messages__conversation-top span {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.student-messages__conversation p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Right panel ── */
+.student-messages__right {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.student-messages__header {
+  padding: 22px 24px;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.08);
+  flex-shrink: 0;
+}
+
+.student-messages__title {
+  margin: 4px 0 12px;
+  font-family: var(--student-heading-font);
+  font-size: clamp(1.3rem, 1.5vw + 0.6rem, 1.8rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: #111111;
+}
+
+.student-messages__badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.student-messages__thread {
+  flex: 1;
+  padding: 24px;
+  background: #fcfcfd;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+}
+
+.student-messages__message-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.student-messages__message-wrap.admin {
+  align-items: flex-start;
+}
+
+.student-messages__message-wrap.user {
+  align-items: flex-end;
+}
+
+.student-messages__bubble {
+  max-width: 70%;
+  padding: 14px 18px;
+  font-size: 15px;
+  line-height: 1.55;
+  font-family: var(--student-body-font);
+}
+
+.student-messages__bubble.admin {
+  background: #efefef;
+  color: #111111;
+}
+
+.student-messages__bubble.user {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.student-messages__time {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+.student-messages__input-row {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(17, 17, 17, 0.08);
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+/* Input override: no top/bottom padding mismatch inside row */
+.student-messages__input {
+  flex: 1;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .student-messages__layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .student-messages__left {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+}

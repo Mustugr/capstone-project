@@ -1,0 +1,46 @@
+.student-form-page {
+  flex: 1;
+  padding: 36px 32px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.student-form-page__card {
+  width: 100%;
+  max-width: 720px;
+  padding: clamp(28px, 4vw, 44px);
+}
+
+.student-form-page__title {
+  margin: 0 0 10px;
+  font-family: var(--student-heading-font);
+  font-size: clamp(1.9rem, 2.5vw + 0.8rem, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: #111111;
+  line-height: 0.98;
+}
+
+.student-form-page__subtitle {
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-size: 15px;
+  font-family: var(--student-body-font);
+  line-height: 1.6;
+}
+
+.student-form-page__form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.student-form-page__file {
+  width: 100%;
+  padding: 12px 0;
+  font-size: 14px;
+  font-family: var(--student-body-font);
+  color: var(--muted);
+}

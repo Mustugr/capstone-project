@@ -1,0 +1,55 @@
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.admin-found-items {
+  flex: 1;
+  padding: 36px 32px;
+}
+
+.admin-found-items__header {
+  margin-bottom: 24px;
+}
+
+.category-filters {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.category-filters__btn {
+  background: white;
+  color: #6b7280;
+  border: 1px solid rgba(17, 17, 17, 0.14);
+  padding: 10px 16px;
+  border-radius: 0;
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.category-filters__btn:hover {
+  color: #111111;
+  background: #f8f9fb;
+}
+
+.category-filters__btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.Items_container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 24px;
+}

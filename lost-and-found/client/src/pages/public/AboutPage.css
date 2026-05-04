@@ -1,0 +1,228 @@
+.about-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(360px, 0.98fr);
+  gap: clamp(28px, 4vw, 54px);
+  align-items: center;
+  min-height: clamp(460px, 52vw, 640px);
+}
+
+.about-hero__title,
+.about-pillars__card h2,
+.about-process__card h2,
+.about-note__panel h2 {
+  margin: 0 0 16px;
+  font-family: var(--home-heading-font);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: #111111;
+}
+
+.about-hero__title {
+  max-width: 8.8ch;
+  font-size: clamp(2.15rem, 3.8vw + 0.8rem, 4.6rem);
+}
+
+.about-hero__lead,
+.about-pillars__card p,
+.about-process__card p,
+.about-note__panel p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.68;
+  font-size: clamp(0.92rem, 0.35vw + 0.82rem, 1rem);
+}
+
+.about-hero__lead {
+  max-width: 34rem;
+  margin-bottom: 28px;
+}
+
+.about-hero__visual {
+  position: relative;
+  min-height: clamp(360px, 46vw, 560px);
+}
+
+.about-hero__backdrop {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 76%;
+  height: 72%;
+  overflow: hidden;
+  background: var(--accent);
+}
+
+.about-hero__backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  opacity: 0.82;
+  mix-blend-mode: multiply;
+  filter: saturate(0.72) contrast(1.02);
+}
+
+.about-hero__image {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 80%;
+  height: 78%;
+  overflow: hidden;
+  box-shadow: 0 24px 42px rgba(0, 0, 0, 0.12);
+}
+
+.about-hero__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  filter: saturate(0.9) contrast(1.02);
+}
+
+.about-hero__accent {
+  position: absolute;
+  right: 10%;
+  bottom: 0;
+  width: clamp(34px, 4vw, 50px);
+  height: 56%;
+  background: var(--primary);
+}
+
+.about-pillars__grid,
+.about-process__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(18px, 2vw, 28px);
+}
+
+.about-pillars__card,
+.about-process__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 100%;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  background: linear-gradient(180deg, #ffffff 0%, #fffdf7 100%);
+  padding: clamp(22px, 2.8vw, 30px);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.06);
+}
+
+.about-pillars__card::before,
+.about-process__card::before {
+  content: "";
+  width: 54px;
+  height: 4px;
+  margin-bottom: 16px;
+  background: var(--accent);
+}
+
+.about-pillars__card h2,
+.about-process__card h2 {
+  margin: 0 0 12px;
+  font-size: clamp(1.15rem, 1vw + 0.9rem, 1.55rem);
+}
+
+.about-card__eyebrow {
+  display: inline-flex;
+  margin-bottom: 10px;
+  color: var(--primary);
+  font-family: var(--home-heading-font);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.about-note__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: #111111;
+  color: #ffffff;
+  padding: clamp(28px, 4vw, 44px);
+}
+
+.about-note__panel h2 {
+  color: #ffffff;
+  font-size: clamp(1.7rem, 2.2vw + 0.9rem, 3rem);
+}
+
+.about-note__panel p {
+  max-width: 46rem;
+  margin-bottom: 24px;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.about-note__panel .home-highlight-label {
+  color: #ffffff;
+}
+
+.about-note__panel .home-highlight-label::after {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.about-note__panel .link-arrow {
+  color: #ffffff;
+}
+
+.about-note__panel .link-arrow:hover {
+  color: var(--accent);
+}
+
+@media (max-width: 1180px) {
+  .about-hero,
+  .about-pillars__grid,
+  .about-process__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .about-hero {
+    gap: 28px;
+    min-height: auto;
+  }
+
+  .about-hero__visual {
+    min-height: 340px;
+  }
+
+  .about-hero__backdrop {
+    width: 100%;
+    height: 58%;
+  }
+
+  .about-hero__image {
+    width: 86%;
+    height: 74%;
+  }
+
+  .about-hero__accent {
+    right: 6%;
+    width: 26px;
+    height: 48%;
+  }
+}
+
+@media (max-width: 520px) {
+  .about-hero__visual {
+    min-height: 280px;
+  }
+
+  .about-hero__backdrop {
+    height: 54%;
+  }
+
+  .about-hero__image {
+    width: 88%;
+    height: 70%;
+  }
+
+  .about-hero__accent {
+    width: 22px;
+  }
+}
