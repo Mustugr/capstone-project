@@ -51,7 +51,6 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
 
   const handleResolve = async () => {
     if (!report || busy) return;
-    if (!window.confirm('Mark this report as resolved? The student has picked up the item.')) return;
     setBusy(true);
     try {
       const updated = await api.patch(`/reports/${report.id}/resolve`, {});
@@ -100,9 +99,10 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
                 {report.status}
               </span>
               {report.status === 'Matched' && (
-                <div style={{ marginTop: 12 }}>
-                  <button type='button' disabled={busy} onClick={handleResolve}>
-                    {busy ? 'Saving...' : 'Student Picked Up'}
+                <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                  <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0 }}>Student already picked up?</p>
+                  <button type='button' className="admin-lift-btn" disabled={busy} onClick={handleResolve}>
+                    <span className="admin-lift-btn__face">{busy ? 'Saving...' : 'Resolved'}</span>
                   </button>
                 </div>
               )}
