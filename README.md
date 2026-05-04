@@ -1,7 +1,7 @@
 <h1>Capstone- Lost and Found Project</h1>
 <h6>by Jason Shan, Mustafa Kurt, and Raymond Huang</h6>
 <br/>
-<p>An Lost and found app made for organizations to better help the return of Lost items to their owners. </p>
+<p>An Lost and found app made for organizations to better help the return of Lost items to their owner. </p>
 
 <h2>Instructions</h2>
 <a href='https://github.com/rh442/Capstone-LostAndFound/blob/main/Instructions/Project%20Requirements.pdf'>Project Requirements</a>
