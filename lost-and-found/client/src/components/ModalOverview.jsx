@@ -142,7 +142,7 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
                       <tr className='item-set' key={item.id}>
                         <td>
                           {item.image_url
-                            ? <img src={`${SERVER_BASE}${item.image_url}`} alt={item.item_name} />
+                            ? <img src={item.image_url.startsWith('http') ? item.image_url : `${SERVER_BASE}${item.image_url}`} alt={item.item_name} />
                             : <span style={{ fontSize: 12, color: 'var(--muted)' }}>—</span>
                           }
                         </td>

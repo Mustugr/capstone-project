@@ -1,22 +1,21 @@
 const express = require('express');
 const multer  = require('multer');
 const path    = require('path');
+const { createClient } = require('@supabase/supabase-js');
 const pool    = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Store uploaded images in server/uploads/, rename to timestamp + original name
-const storage = multer.diskStorage({
-  destination: path.join(__dirname, '../uploads'),
-  filename: (req, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
-    cb(null, `${unique}${path.extname(file.originalname)}`);
-  },
-});
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+const BUCKET = 'found-items';
 
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|webp|gif/;
@@ -60,7 +59,27 @@ router.post('/', requireAdmin, upload.single('image'), async (req, res) => {
     return res.status(400).json({ error: 'Item name is required' });
   }
 
-  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+  let image_url = null;
+
+  if (req.file) {
+    const ext = path.extname(req.file.originalname);
+    const filename = `${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET)
+      .upload(filename, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      return res.status(500).json({ error: 'Failed to upload image' });
+    }
+
+    const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(filename);
+    image_url = urlData.publicUrl;
+  }
 
   try {
     const result = await pool.query(
