@@ -59,6 +59,7 @@ export default function AdminDashboard() {
                 category={item.category}
                 dateSubmitted={item.date_found}
                 storage={item.storage_location}
+                location={item.location_found}
               />
             ))}
           </div>

@@ -1,7 +1,7 @@
 import './ItemCell.css';
 import { SERVER_BASE } from '../lib/api';
 
-export default function ItemCell({ image, item, category, dateSubmitted, storage }) {
+export default function ItemCell({ image, item, category, dateSubmitted, storage, location }) {
   const src = image
     ? image.startsWith('http') ? image : `${SERVER_BASE}${image}`
     : null;
@@ -25,6 +25,7 @@ export default function ItemCell({ image, item, category, dateSubmitted, storage
         <p className="details__name">{item}</p>
         <p><b>Category:</b> {category || '—'}</p>
         <p><b>Date Found:</b> {formatDate(dateSubmitted)}</p>
+        <p><b>Location Found:</b> {location || '—'}</p>
         <p><b>Storage:</b> {storage || '—'}</p>
       </div>
     </div>

@@ -179,6 +179,7 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
                   category={matchedItem.category}
                   dateSubmitted={matchedItem.date_found}
                   storage={matchedItem.storage_location}
+                  location={matchedItem.location_found}
                 />
               </div>
             )}
