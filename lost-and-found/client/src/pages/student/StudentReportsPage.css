@@ -203,6 +203,8 @@
 @media (max-width: 768px) {
   .student-reports {
     padding: 72px 16px 24px;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   .student-reports__topbar {
@@ -225,9 +227,17 @@
 
   .student-reports__table {
     overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
   }
 
   .student-reports__table table {
-    min-width: 520px;
+    min-width: 480px;
+  }
+
+  /* Hide Category column on mobile to fit comfortably */
+  .student-reports__table thead th:nth-child(2),
+  .student-reports__table tbody td:nth-child(2) {
+    display: none;
   }
 }

@@ -25,16 +25,18 @@ export default function AdminSidebar() {
 
   return (
     <>
-      <button
-        type="button"
-        className="admin-sidebar__hamburger"
-        onClick={() => setIsOpen(true)}
-        aria-label="Open menu"
-      >
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
+      {!isOpen && (
+        <button
+          type="button"
+          className="admin-sidebar__hamburger"
+          onClick={() => setIsOpen(true)}
+          aria-label="Open menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      )}
 
       {isOpen && <div className="admin-sidebar__backdrop" onClick={close} />}
 

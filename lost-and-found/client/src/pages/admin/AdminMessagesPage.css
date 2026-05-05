@@ -243,5 +243,25 @@
 @media (max-width: 768px) {
   .admin-messages {
     padding: 72px 16px 24px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .admin-messages__layout {
+    max-width: 100%;
+  }
+
+  .admin-messages__conversation-top {
+    gap: 6px;
+  }
+
+  .admin-messages__conversation-top .status-badge {
+    font-size: 10px;
+    padding: 4px 8px;
+    flex-shrink: 0;
+  }
+
+  .admin-messages__bubble {
+    max-width: 85%;
   }
 }

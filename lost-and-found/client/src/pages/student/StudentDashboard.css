@@ -103,6 +103,8 @@
 @media (max-width: 768px) {
   .student-dashboard {
     padding: 72px 16px 24px;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   .student-dashboard__stats {
@@ -121,14 +123,21 @@
 
   .student-dashboard__table {
     overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
   }
 
   .student-dashboard__table .student-table {
-    min-width: 480px;
+    min-width: 360px;
   }
 
   .student-page-title {
     font-size: 1.7rem !important;
+    word-break: break-word;
+  }
+
+  .student-page-subtitle {
+    word-break: break-word;
   }
 
   .student-table th,

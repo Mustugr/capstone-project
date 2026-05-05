@@ -25,16 +25,18 @@ export default function StudentSidebar() {
 
   return (
     <>
-      <button
-        type="button"
-        className="student-sidebar__hamburger"
-        onClick={() => setIsOpen(true)}
-        aria-label="Open menu"
-      >
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
+      {!isOpen && (
+        <button
+          type="button"
+          className="student-sidebar__hamburger"
+          onClick={() => setIsOpen(true)}
+          aria-label="Open menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      )}
 
       {isOpen && <div className="student-sidebar__backdrop" onClick={close} />}
 

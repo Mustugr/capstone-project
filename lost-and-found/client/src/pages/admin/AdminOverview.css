@@ -80,6 +80,8 @@
 @media (max-width: 768px) {
   .admin-reports {
     padding: 72px 16px 24px;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   .admin-reports__topbar {
@@ -102,9 +104,11 @@
 
   .admin-reports__table {
     overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
   }
 
   .admin-reports__table table {
-    min-width: 560px;
+    min-width: 480px;
   }
 }

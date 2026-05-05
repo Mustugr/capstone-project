@@ -194,6 +194,43 @@
 @media (max-width: 768px) {
   .student-messages {
     padding: 72px 16px 24px;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .student-messages__layout {
+    max-width: 100%;
+  }
+
+  .student-messages__conversation-top {
+    gap: 6px;
+  }
+
+  .student-messages__conversation-top .status-badge {
+    font-size: 10px;
+    padding: 4px 8px;
+    flex-shrink: 0;
+  }
+
+  .student-messages__bubble {
+    max-width: 85%;
+  }
+
+  .hawk-ai-conversation {
+    padding: 14px 14px;
+    gap: 10px;
+  }
+
+  .hawk-ai-conversation__text strong {
+    font-size: 0.85rem;
+  }
+
+  .hawk-ai-header {
+    padding: 14px 16px;
+  }
+
+  .hawk-ai-header__title {
+    font-size: 1.1rem;
   }
 }
 
