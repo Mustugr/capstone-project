@@ -3,6 +3,7 @@ import StudentSidebar from "../../components/StudentSidebar";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../lib/api";
 import { connectSocket } from "../../lib/socket";
+import hawkAiUrl from "../../assets/hawk.svg";
 import "./StudentMessagesPage.css";
 
 const HAWK_AI_ID = "hawk-ai";
@@ -10,21 +11,7 @@ const HAWK_AI_ID = "hawk-ai";
 function HawkAvatar({ size = 36 }) {
   return (
     <div className="hawk-avatar" style={{ width: size, height: size }}>
-      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <linearGradient id="hawkBg" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#5d2299" />
-            <stop offset="100%" stopColor="#7d3fb8" />
-          </linearGradient>
-        </defs>
-        <circle cx="32" cy="32" r="32" fill="url(#hawkBg)" />
-        <path
-          d="M14 30 C14 22 22 16 30 16 C38 16 44 20 46 28 L52 32 L46 34 L43 38 L48 42 L40 42 L34 46 C26 48 18 44 16 38 C14 35 14 32 14 30 Z"
-          fill="#FDB927"
-        />
-        <circle cx="34" cy="26" r="2.4" fill="#1a1a1a" />
-        <path d="M44 30 L52 32 L44 34 Z" fill="#FDB927" stroke="#1a1a1a" strokeWidth="0.4" />
-      </svg>
+      <img src={hawkAiUrl} alt="Hawk AI" />
     </div>
   );
 }
