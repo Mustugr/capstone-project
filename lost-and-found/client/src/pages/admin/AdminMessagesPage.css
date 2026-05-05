@@ -242,13 +242,47 @@
 
 @media (max-width: 768px) {
   .admin-messages {
-    padding: 72px 16px 24px;
+    padding: 72px 12px 12px;
     max-width: 100%;
     overflow-x: hidden;
+    height: 100dvh;
+    max-height: 100dvh;
+    box-sizing: border-box;
   }
 
   .admin-messages__layout {
     max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: calc(100dvh - 84px);
+    min-height: 0;
+  }
+
+  .admin-messages__left {
+    flex-shrink: 0;
+    max-height: 220px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-messages__right {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .admin-messages__thread {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-messages__input-row {
+    flex-shrink: 0;
   }
 
   .admin-messages__conversation-top {
@@ -263,5 +297,9 @@
 
   .admin-messages__bubble {
     max-width: 85%;
+  }
+
+  .admin-messages__header {
+    flex-shrink: 0;
   }
 }

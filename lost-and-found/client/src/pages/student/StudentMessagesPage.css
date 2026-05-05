@@ -193,13 +193,47 @@
 
 @media (max-width: 768px) {
   .student-messages {
-    padding: 72px 16px 24px;
+    padding: 72px 12px 12px;
     max-width: 100%;
     overflow-x: hidden;
+    height: 100dvh;
+    max-height: 100dvh;
+    box-sizing: border-box;
   }
 
   .student-messages__layout {
     max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: calc(100dvh - 84px);
+    min-height: 0;
+  }
+
+  .student-messages__left {
+    flex-shrink: 0;
+    max-height: 220px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .student-messages__right {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .student-messages__thread {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .student-messages__input-row {
+    flex-shrink: 0;
   }
 
   .student-messages__conversation-top {
@@ -227,6 +261,7 @@
 
   .hawk-ai-header {
     padding: 14px 16px;
+    flex-shrink: 0;
   }
 
   .hawk-ai-header__title {
