@@ -231,5 +231,16 @@ img {
   #root {
     overflow-x: hidden;
     max-width: 100vw;
+    overscroll-behavior-x: none;
+  }
+
+  body {
+    position: relative;
+  }
+
+  .student-layout,
+  .admin-layout {
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }

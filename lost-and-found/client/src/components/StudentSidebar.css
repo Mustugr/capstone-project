@@ -296,9 +296,13 @@
     top: 0;
     left: 0;
     height: 100vh;
+    height: 100dvh;
     z-index: 1000;
     transform: translateX(-100%);
     transition: transform 280ms ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
   }
 
   .student-sidebar--open {
@@ -311,5 +315,9 @@
 
   .student-sidebar__backdrop {
     display: block;
+  }
+
+  .student-sidebar__logout {
+    margin-top: 24px;
   }
 }
