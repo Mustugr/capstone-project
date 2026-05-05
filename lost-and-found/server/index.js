@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const reportsRoutes = require('./routes/reports');
 const foundItemsRoutes = require('./routes/foundItems');
 const messagesRoutes = require('./routes/messages');
+const chatRoutes = require('./routes/chat');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -39,6 +40,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/found-items', foundItemsRoutes);
 app.use('/api/messages', messagesRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

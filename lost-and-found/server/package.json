@@ -9,6 +9,7 @@
     "init-db": "node initDb.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.93.0",
     "@supabase/supabase-js": "^2.105.3",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
