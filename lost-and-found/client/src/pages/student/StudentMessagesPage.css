@@ -14,7 +14,8 @@
 
 /* ── Left panel ── */
 .student-messages__left {
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }

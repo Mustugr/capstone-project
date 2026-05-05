@@ -14,7 +14,8 @@
 
 /* ── Left panel ── */
 .admin-messages__left {
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
