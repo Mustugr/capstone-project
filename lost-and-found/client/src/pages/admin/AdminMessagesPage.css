@@ -239,3 +239,9 @@
     overflow-y: auto;
   }
 }
+
+@media (max-width: 768px) {
+  .admin-messages {
+    padding: 72px 16px 24px;
+  }
+}

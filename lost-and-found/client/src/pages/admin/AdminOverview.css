@@ -75,3 +75,36 @@
   color: var(--muted);
   font-size: 15px;
 }
+
+/* ── Mobile breakpoint (≤768px) ── */
+@media (max-width: 768px) {
+  .admin-reports {
+    padding: 72px 16px 24px;
+  }
+
+  .admin-reports__topbar {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .admin-reports__filters {
+    gap: 8px;
+  }
+
+  .admin-reports__filter-btn {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+  }
+
+  .admin-reports__search {
+    width: 100%;
+  }
+
+  .admin-reports__table {
+    overflow-x: auto;
+  }
+
+  .admin-reports__table table {
+    min-width: 560px;
+  }
+}

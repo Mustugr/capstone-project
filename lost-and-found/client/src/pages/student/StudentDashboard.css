@@ -98,3 +98,42 @@
   padding: 22px 24px;
   border-bottom: 1px solid rgba(17, 17, 17, 0.08);
 }
+
+/* ── Mobile breakpoint (≤768px) ── */
+@media (max-width: 768px) {
+  .student-dashboard {
+    padding: 72px 16px 24px;
+  }
+
+  .student-dashboard__stats {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .student-dashboard__stat {
+    padding: 18px 18px;
+  }
+
+  .student-dashboard__stat-value {
+    font-size: 2.4rem;
+  }
+
+  .student-dashboard__table {
+    overflow-x: auto;
+  }
+
+  .student-dashboard__table .student-table {
+    min-width: 480px;
+  }
+
+  .student-page-title {
+    font-size: 1.7rem !important;
+  }
+
+  .student-table th,
+  .student-table td {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+}

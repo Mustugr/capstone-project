@@ -198,3 +198,36 @@
   color: #166534;
   line-height: 1.5;
 }
+
+/* ── Mobile breakpoint (≤768px) ── */
+@media (max-width: 768px) {
+  .student-reports {
+    padding: 72px 16px 24px;
+  }
+
+  .student-reports__topbar {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .student-reports__filters {
+    gap: 8px;
+  }
+
+  .student-reports__filter-btn {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+  }
+
+  .student-reports__search {
+    width: 100%;
+  }
+
+  .student-reports__table {
+    overflow-x: auto;
+  }
+
+  .student-reports__table table {
+    min-width: 520px;
+  }
+}

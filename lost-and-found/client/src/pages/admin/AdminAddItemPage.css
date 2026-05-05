@@ -122,3 +122,10 @@
   padding: 0;
   text-decoration: underline;
 }
+
+/* ── Mobile breakpoint (≤768px) ── */
+@media (max-width: 768px) {
+  .admin-form-page {
+    padding: 72px 16px 24px;
+  }
+}

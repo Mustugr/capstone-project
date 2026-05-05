@@ -53,3 +53,29 @@
   flex-wrap: wrap;
   gap: 24px;
 }
+
+/* ── Mobile breakpoint (≤768px) ── */
+@media (max-width: 768px) {
+  .admin-found-items {
+    padding: 72px 16px 24px;
+  }
+
+  .admin-found-items__header {
+    margin-bottom: 18px;
+  }
+
+  .category-filters {
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .category-filters__btn {
+    padding: 8px 12px;
+    font-size: 0.7rem;
+  }
+
+  .Items_container {
+    gap: 16px;
+    justify-content: center;
+  }
+}

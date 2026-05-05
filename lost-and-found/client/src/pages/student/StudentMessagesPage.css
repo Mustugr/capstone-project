@@ -191,6 +191,12 @@
   }
 }
 
+@media (max-width: 768px) {
+  .student-messages {
+    padding: 72px 16px 24px;
+  }
+}
+
 /* ── Hawk AI ── */
 .hawk-avatar {
   border-radius: 50%;

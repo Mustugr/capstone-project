@@ -44,3 +44,10 @@
   font-family: var(--student-body-font);
   color: var(--muted);
 }
+
+/* ── Mobile breakpoint (≤768px) ── */
+@media (max-width: 768px) {
+  .student-form-page {
+    padding: 72px 16px 24px;
+  }
+}

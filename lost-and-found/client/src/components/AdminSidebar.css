@@ -254,3 +254,74 @@
   font-size: 0.88rem;
   letter-spacing: 0.12em;
 }
+
+/* ── Hamburger button (mobile only) ── */
+.admin-sidebar__hamburger {
+  display: none;
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  width: 44px;
+  height: 44px;
+  background: #111111;
+  border: none;
+  cursor: pointer;
+  z-index: 1001;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.admin-sidebar__hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: #ffffff;
+  transition: background 180ms ease;
+}
+
+.admin-sidebar__hamburger:hover span {
+  background: var(--accent);
+}
+
+.admin-sidebar__backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  animation: adminBackdropFadeIn 200ms ease;
+}
+
+@keyframes adminBackdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Mobile breakpoint (≤768px) ── */
+@media (max-width: 768px) {
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 280ms ease;
+  }
+
+  .admin-sidebar--open {
+    transform: translateX(0);
+  }
+
+  .admin-sidebar__hamburger {
+    display: flex;
+  }
+
+  .admin-sidebar__backdrop {
+    display: block;
+  }
+}
