@@ -79,36 +79,143 @@
 /* ── Mobile breakpoint (≤768px) ── */
 @media (max-width: 768px) {
   .admin-reports {
-    padding: 72px 16px 24px;
+    padding: 64px 12px 24px;
     max-width: 100%;
     overflow-x: hidden;
   }
 
   .admin-reports__topbar {
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-direction: column;
+    align-items: stretch;
   }
 
+  /* Filters: horizontal scrollable strip */
   .admin-reports__filters {
     gap: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-left: -12px;
+    margin-right: -12px;
+    padding: 4px 12px;
+  }
+
+  .admin-reports__filters::-webkit-scrollbar {
+    display: none;
   }
 
   .admin-reports__filter-btn {
-    padding: 8px 12px;
-    font-size: 0.7rem;
+    padding: 9px 14px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .admin-reports__search {
     width: 100%;
+    min-height: 44px;
   }
 
+  /* Table → card layout */
   .admin-reports__table {
-    overflow-x: auto;
-    max-width: 100%;
-    -webkit-overflow-scrolling: touch;
+    background: transparent;
+    border: none;
+    box-shadow: none;
   }
 
-  .admin-reports__table table {
-    min-width: 480px;
+  .admin-reports__table table,
+  .admin-reports__table tbody,
+  .admin-reports__table tr {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-reports__table thead {
+    display: none;
+  }
+
+  .admin-reports__table tr {
+    margin-bottom: 12px;
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    border-left: 3px solid var(--accent);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  }
+
+  .admin-reports__table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    border: none;
+    font-size: 14px;
+  }
+
+  .admin-reports__table td::before {
+    content: attr(data-label);
+    font-family: "Oswald", "Arial Narrow", sans-serif;
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  /* First cell (Item) as card title */
+  .admin-reports__table td:first-child {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: "Oswald", "Arial Narrow", sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .admin-reports__table td:first-child::before {
+    margin-bottom: 4px;
+  }
+
+  /* Last two cells (action buttons) span full width side-by-side */
+  .admin-reports__table td:nth-last-child(-n+2) {
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+    justify-content: stretch;
+  }
+
+  .admin-reports__table td:nth-last-child(-n+2)::before {
+    display: none;
+  }
+
+  .admin-reports__table td:nth-last-child(-n+2) .admin-lift-btn {
+    width: 100%;
+  }
+
+  .admin-reports__table td:nth-last-child(-n+2) .admin-lift-btn__face {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .admin-reports__empty {
+    display: block !important;
+    background: #ffffff;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    text-align: center;
+    padding: 28px !important;
+  }
+
+  .admin-reports__empty::before {
+    display: none;
   }
 }

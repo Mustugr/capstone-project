@@ -97,11 +97,11 @@ export default function AdminOverview() {
                   {filteredReports.length > 0 ? (
                     filteredReports.map((report) => (
                       <tr key={report.id}>
-                        <td>{report.item_name}</td>
-                        <td>{report.category || "—"}</td>
-                        <td>{formatDate(report.created_at)}</td>
-                        <td><span className={statusClass(report.status)}>{report.status}</span></td>
-                        <td>
+                        <td data-label="Item">{report.item_name}</td>
+                        <td data-label="Category">{report.category || "—"}</td>
+                        <td data-label="Date">{formatDate(report.created_at)}</td>
+                        <td data-label="Status"><span className={statusClass(report.status)}>{report.status}</span></td>
+                        <td data-label="Action">
                           <button
                             className="admin-lift-btn admin-lift-btn--ghost"
                             onClick={() => navigate(`/admin-message?reportId=${report.id}`)}
@@ -109,7 +109,7 @@ export default function AdminOverview() {
                             <span className="admin-lift-btn__face">Chat</span>
                           </button>
                         </td>
-                        <td>
+                        <td data-label="Details">
                           <button
                             className="admin-lift-btn"
                             onClick={() => {

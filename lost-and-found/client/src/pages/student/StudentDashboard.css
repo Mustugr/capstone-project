@@ -102,47 +102,103 @@
 /* ── Mobile breakpoint (≤768px) ── */
 @media (max-width: 768px) {
   .student-dashboard {
-    padding: 72px 16px 24px;
+    padding: 64px 12px 24px;
     max-width: 100%;
     overflow-x: hidden;
   }
 
+  .student-dashboard__header {
+    margin-bottom: 18px;
+  }
+
+  /* Stats: horizontal swipeable cards */
   .student-dashboard__stats {
-    grid-template-columns: 1fr;
-    gap: 14px;
-    margin-bottom: 22px;
+    display: flex;
+    grid-template-columns: none;
+    gap: 12px;
+    margin-bottom: 18px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    /* Allow cards to break out of page padding for nicer scroll edges */
+    margin-left: -12px;
+    margin-right: -12px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .student-dashboard__stats::-webkit-scrollbar {
+    display: none;
   }
 
   .student-dashboard__stat {
-    padding: 18px 18px;
+    flex: 0 0 auto;
+    width: 64%;
+    min-width: 180px;
+    padding: 18px 20px;
+    scroll-snap-align: start;
   }
 
   .student-dashboard__stat-value {
-    font-size: 2.4rem;
-  }
-
-  .student-dashboard__table {
-    overflow-x: auto;
-    max-width: 100%;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .student-dashboard__table .student-table {
-    min-width: 360px;
+    font-size: 2.2rem;
   }
 
   .student-page-title {
-    font-size: 1.7rem !important;
+    font-size: 1.6rem !important;
     word-break: break-word;
   }
 
   .student-page-subtitle {
     word-break: break-word;
+    font-size: 14px;
   }
 
-  .student-table th,
-  .student-table td {
-    padding: 12px 14px;
-    font-size: 13px;
+  /* Recent reports table → cards */
+  .student-dashboard__table {
+    max-width: 100%;
+  }
+
+  .student-dashboard__table .student-table,
+  .student-dashboard__table .student-table tbody,
+  .student-dashboard__table .student-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  .student-dashboard__table .student-table thead {
+    display: none;
+  }
+
+  .student-dashboard__table .student-table tr {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .student-dashboard__table .student-table tr:last-child {
+    border-bottom: none;
+  }
+
+  .student-dashboard__table .student-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    border: none;
+    font-size: 14px;
+  }
+
+  .student-dashboard__table .student-table td::before {
+    content: attr(data-label);
+    font-family: var(--student-heading-font);
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    flex-shrink: 0;
   }
 }

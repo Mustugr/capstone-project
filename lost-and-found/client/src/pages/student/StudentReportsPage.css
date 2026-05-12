@@ -202,42 +202,147 @@
 /* ── Mobile breakpoint (≤768px) ── */
 @media (max-width: 768px) {
   .student-reports {
-    padding: 72px 16px 24px;
+    padding: 64px 12px 24px;
     max-width: 100%;
     overflow-x: hidden;
   }
 
   .student-reports__topbar {
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-direction: column;
+    align-items: stretch;
   }
 
+  /* Filters: horizontal scrollable strip */
   .student-reports__filters {
     gap: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-left: -12px;
+    margin-right: -12px;
+    padding: 4px 12px;
+  }
+
+  .student-reports__filters::-webkit-scrollbar {
+    display: none;
   }
 
   .student-reports__filter-btn {
-    padding: 8px 12px;
-    font-size: 0.7rem;
+    padding: 9px 14px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .student-reports__search {
     width: 100%;
+    min-height: 44px;
   }
 
+  /* Table → card layout */
   .student-reports__table {
-    overflow-x: auto;
-    max-width: 100%;
-    -webkit-overflow-scrolling: touch;
+    background: transparent;
+    border: none;
+    box-shadow: none;
   }
 
-  .student-reports__table table {
-    min-width: 480px;
+  .student-reports__table::before {
+    display: none;
   }
 
-  /* Hide Category column on mobile to fit comfortably */
-  .student-reports__table thead th:nth-child(2),
-  .student-reports__table tbody td:nth-child(2) {
+  .student-reports__table table,
+  .student-reports__table tbody,
+  .student-reports__table tr {
+    display: block;
+    width: 100%;
+  }
+
+  .student-reports__table thead {
+    display: none;
+  }
+
+  .student-reports__table tr {
+    margin-bottom: 12px;
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    border-left: 3px solid var(--accent);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  }
+
+  .student-reports__table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    border: none;
+    font-size: 14px;
+  }
+
+  .student-reports__table td:last-child {
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+    justify-content: stretch;
+  }
+
+  .student-reports__table td:last-child::before {
+    display: none;
+  }
+
+  .student-reports__table td:last-child .student-lift-btn {
+    width: 100%;
+  }
+
+  .student-reports__table td:last-child .student-lift-btn__face {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .student-reports__table td::before {
+    content: attr(data-label);
+    font-family: var(--student-heading-font);
+    font-weight: 700;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  /* First cell (Item) renders as the card title */
+  .student-reports__table td:first-child {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: var(--student-heading-font);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .student-reports__table td:first-child::before {
+    margin-bottom: 4px;
+  }
+
+  /* Empty state row should not be a card */
+  .student-reports__empty {
+    display: block !important;
+    background: #ffffff;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    text-align: center;
+    padding: 28px !important;
+  }
+
+  .student-reports__empty::before {
     display: none;
   }
 }

@@ -48,6 +48,45 @@
 /* ── Mobile breakpoint (≤768px) ── */
 @media (max-width: 768px) {
   .student-form-page {
-    padding: 72px 16px 24px;
+    padding: 64px 12px 24px;
+  }
+
+  .student-form-page__card {
+    padding: 20px 16px;
+  }
+
+  .student-form-page__title {
+    font-size: 1.5rem;
+  }
+
+  .student-form-page__form {
+    gap: 14px;
+  }
+
+  /* Inputs: full width, 44px min tap target */
+  .student-form-page__card .student-input,
+  .student-form-page__card .student-select,
+  .student-form-page__card .student-textarea,
+  .student-form-page__card input,
+  .student-form-page__card select,
+  .student-form-page__card textarea {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px; /* prevents iOS zoom on focus */
+    padding: 12px 14px;
+  }
+
+  .student-form-page__card .student-textarea {
+    min-height: 110px;
+  }
+
+  /* Buttons: full width, taller tap target */
+  .student-form-page__card .student-lift-btn {
+    width: 100%;
+  }
+
+  .student-form-page__card .student-lift-btn__face {
+    width: 100%;
+    min-height: 50px;
   }
 }

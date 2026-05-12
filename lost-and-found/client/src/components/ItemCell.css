@@ -72,3 +72,32 @@
   color: var(--text);
   margin-bottom: 8px;
 }
+
+/* ── Mobile breakpoint (≤768px) ── */
+@media (max-width: 768px) {
+  .cellContainer {
+    width: calc(50% - 6px);
+    min-width: 0;
+  }
+
+  .img_container {
+    height: 130px;
+  }
+
+  .details {
+    padding: 12px 12px;
+  }
+
+  .details p {
+    font-size: 12px;
+    margin: 3px 0;
+    line-height: 1.4;
+  }
+
+  .details__name,
+  .details p:first-child {
+    font-size: 0.88rem;
+    margin-bottom: 6px;
+    word-break: break-word;
+  }
+}

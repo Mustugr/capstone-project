@@ -57,25 +57,41 @@
 /* ── Mobile breakpoint (≤768px) ── */
 @media (max-width: 768px) {
   .admin-found-items {
-    padding: 72px 16px 24px;
+    padding: 64px 12px 24px;
   }
 
   .admin-found-items__header {
-    margin-bottom: 18px;
+    margin-bottom: 14px;
   }
 
+  /* Category filters: horizontal scrollable strip */
   .category-filters {
     gap: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-left: -12px;
+    margin-right: -12px;
+    padding: 4px 12px;
+  }
+
+  .category-filters::-webkit-scrollbar {
+    display: none;
   }
 
   .category-filters__btn {
-    padding: 8px 12px;
-    font-size: 0.7rem;
+    padding: 9px 14px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
+  /* Item cards: 2 columns on mobile, compact */
   .Items_container {
-    gap: 16px;
-    justify-content: center;
+    gap: 12px;
+    justify-content: flex-start;
   }
 }

@@ -126,6 +126,38 @@
 /* ── Mobile breakpoint (≤768px) ── */
 @media (max-width: 768px) {
   .admin-form-page {
-    padding: 72px 16px 24px;
+    padding: 64px 12px 24px;
+  }
+
+  .admin-form-page__card {
+    padding: 20px 16px;
+  }
+
+  .admin-form-page__title {
+    font-size: 1.5rem;
+  }
+
+  /* Inputs: full width, 44px min tap target, no iOS zoom */
+  .admin-form-page__card input,
+  .admin-form-page__card select,
+  .admin-form-page__card textarea {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+    padding: 12px 14px;
+  }
+
+  .admin-form-page__card textarea {
+    min-height: 110px;
+  }
+
+  /* Buttons */
+  .admin-form-page__card .admin-lift-btn {
+    width: 100%;
+  }
+
+  .admin-form-page__card .admin-lift-btn__face {
+    width: 100%;
+    min-height: 50px;
   }
 }

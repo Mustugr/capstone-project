@@ -82,11 +82,11 @@ export default function StudentReportsPage() {
                   {filteredReports.length > 0 ? (
                     filteredReports.map((report) => (
                       <tr key={report.id}>
-                        <td>{report.item_name}</td>
-                        <td>{report.category || "—"}</td>
-                        <td>{formatDate(report.created_at)}</td>
-                        <td><span className={statusClass(report.status)}>{report.status}</span></td>
-                        <td>
+                        <td data-label="Item">{report.item_name}</td>
+                        <td data-label="Category">{report.category || "—"}</td>
+                        <td data-label="Date">{formatDate(report.created_at)}</td>
+                        <td data-label="Status"><span className={statusClass(report.status)}>{report.status}</span></td>
+                        <td data-label="Details">
                           <button className="student-lift-btn" onClick={() => setSelected(report)}>
                             <span className="student-lift-btn__face">View</span>
                           </button>
