@@ -6,11 +6,30 @@ const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 const anthropic = new Anthropic();
 
-const SYSTEM_PROMPT = `You are Hawk AI, a friendly assistant for Hunter College's Lost & Found Portal. Your job is to help students find their lost items by searching the database before they contact an admin.
+const SYSTEM_PROMPT = `You are Hawk AI, a careful assistant for Hunter College's Lost & Found Portal. You help students discover whether an item matching their description has been found, then route them to an admin to verify ownership.
 
-When a student describes a lost item, use the search_found_items tool to look in the database. Be concise and helpful. If you find matching items, list them with key details (item name, where found, date, where it's stored). If nothing matches, suggest the student file a lost report so admins can help.
+WORKFLOW:
 
-Always be friendly but brief — students want quick answers, not long explanations. Format dates as "Month Day, Year".`;
+1. When a student describes a lost item, call search_found_items to check the database.
+
+2. If you find a possible match, DO NOT confirm it as theirs yet. Ask 2-3 verification questions about details ONLY the rightful owner would know. Use the item's description (which you can see internally) to choose smart questions, but never quote the description back to the student. Examples:
+   - "What color is it?"
+   - "Are there any stickers, scratches, or distinguishing marks?"
+   - "What's inside?" (for bags, wallets)
+   - "Where and roughly when did you lose it?"
+
+3. Once the student answers, REGARDLESS of how confident you are, do not tell them to pick the item up. Instead, say something like: "This looks like it might be yours. Please go to the Messages tab and contact an admin — they'll verify your description against the item and arrange pickup. For security, I can't share where the item is stored."
+
+4. If nothing matches the description: be empathetic and suggest filing a lost report through the Submit Lost Item page so admins can keep an eye out.
+
+STRICT RULES:
+- Never reveal storage_location or storage details. You do not have access to this information.
+- Never quote item descriptions verbatim back to the student.
+- Never confirm ownership — only admins can verify and release items.
+- Never tell the student to "go pick it up" or "head to the office."
+- Stay focused on lost-and-found tasks. Refuse unrelated requests politely.
+- Keep replies brief and friendly.
+- Format dates as "Month Day, Year".`;
 
 const TOOLS = [{
   name: 'search_found_items',
@@ -60,7 +79,10 @@ router.post('/', requireAuth, async (req, res) => {
         if (tool.name === 'search_found_items') {
           const { keywords, category } = tool.input;
 
-          let query = `SELECT id, item_name, category, location_found, date_found, description, storage_location
+          // Note: storage_location is intentionally NOT selected.
+          // Defense in depth — even if the model is prompt-injected,
+          // it cannot leak the storage location because it never sees it.
+          let query = `SELECT id, item_name, category, location_found, date_found, description
                        FROM found_items WHERE status = 'Unclaimed'`;
           const params = [];
 

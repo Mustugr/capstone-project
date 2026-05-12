@@ -11,8 +11,16 @@ workspace "Lost & Found Portal" "Architectural C4 model for the Hunter College L
 
         // ────────────────────────────────────────────────────────────
         // External systems
+        //
+        // Security note on the Claude API integration:
+        //   The model has NO direct database access. It can only invoke
+        //   a single server-defined function (search_found_items) whose
+        //   only effect is a parameterized read-only query against the
+        //   found_items table filtered to status='Unclaimed'. The
+        //   profiles, lost_reports, and messages tables are not exposed
+        //   to the model under any circumstance.
         // ────────────────────────────────────────────────────────────
-        claudeApi = softwareSystem "Anthropic Claude API" "Hosted large language model service (Claude Haiku 4.5). Used by the Hawk AI feature via the Messages API with tool use." "External"
+        claudeApi = softwareSystem "Anthropic Claude API" "Hosted large language model service (Claude Haiku 4.5). Receives user prompts and a tool schema; can only invoke the server-defined search_found_items function. Has no direct database, filesystem, or network access." "External"
 
         // ────────────────────────────────────────────────────────────
         // The Lost & Found Portal system
@@ -31,7 +39,7 @@ workspace "Lost & Found Portal" "Architectural C4 model for the Hunter College L
 
                 messagesComponent = component "Messages Routes" "Send and list messages tied to a lost report. After insert, emits a message:new Socket.io event to the admin room and to the owning student's private room for real-time delivery." "Express Router (routes/messages.js)"
 
-                chatComponent = component "Chat Routes" "Hawk AI endpoint. Sends the conversation to the Claude API with a search_found_items tool definition, runs the tool-use loop (max 5 iterations), executes search queries against the database when Claude requests them, and returns the model's final reply." "Express Router + @anthropic-ai/sdk (routes/chat.js)"
+                chatComponent = component "Chat Routes" "Hawk AI endpoint. Acts as the security boundary between the LLM and the database. Receives user messages, sends them to the Claude API with a single tool definition (search_found_items), and on tool-call requests runs a hard-coded parameterized SELECT against unclaimed found_items. Claude never sees raw SQL, never composes queries, and only receives item_name, category, location_found, date_found, and description (storage_location is intentionally withheld so it cannot be leaked even under prompt injection). The system prompt enforces a verification-first workflow: Claude must ask the student 2-3 ownership-verification questions before declaring a possible match, and it must always route final pickup through admin via the Messages tab. Tool-use loop is capped at 5 iterations." "Express Router + @anthropic-ai/sdk (routes/chat.js)"
 
                 socketServer = component "Socket.io Server" "WebSocket layer attached to the HTTP server. Authenticates connections by JWT in the handshake; each user joins a private room named user:{id}, and admins also join the shared admin room." "Socket.io (in index.js)"
 
@@ -50,7 +58,7 @@ workspace "Lost & Found Portal" "Architectural C4 model for the Hunter College L
         // ────────────────────────────────────────────────────────────
         student -> lafSystem "Files lost-item reports, browses found items, messages admin, queries Hawk AI" "HTTPS"
         admin -> lafSystem "Adds found items, matches reports, replies to students, resolves cases" "HTTPS"
-        lafSystem -> claudeApi "Sends user prompts plus tool definitions; exchanges tool-use turns" "HTTPS / JSON"
+        lafSystem -> claudeApi "Sends user prompts plus a single tool schema (search_found_items). No SQL, no user data, no PII leaves the system." "HTTPS / JSON"
 
         // ────────────────────────────────────────────────────────────
         // Container-level relationships
@@ -63,7 +71,7 @@ workspace "Lost & Found Portal" "Architectural C4 model for the Hunter College L
 
         api -> db "Reads from and writes to" "SQL over TCP/TLS"
         api -> storage "Uploads images and reads public URLs" "HTTPS"
-        api -> claudeApi "Calls messages.create with tool definitions" "HTTPS / JSON"
+        api -> claudeApi "Calls messages.create with a single tool definition; the model invokes search_found_items, the API runs the parameterized query and returns rows back to the model" "HTTPS / JSON"
 
         // ────────────────────────────────────────────────────────────
         // Component-level relationships (inside the API)
@@ -85,12 +93,12 @@ workspace "Lost & Found Portal" "Architectural C4 model for the Hunter College L
         reportsComponent -> dbPool "Reads/writes lost_reports and found_items"
         foundItemsComponent -> dbPool "Reads/writes found_items"
         messagesComponent -> dbPool "Reads/writes messages"
-        chatComponent -> dbPool "Reads found_items (via tool call)"
+        chatComponent -> dbPool "Reads unclaimed found_items ONLY (parameterized SELECT executed by server when Claude calls the tool; Claude never composes the SQL itself)"
 
         dbPool -> db "Runs SQL" "TCP/TLS"
         foundItemsComponent -> storage "Uploads image buffers, retrieves public URL" "HTTPS"
         messagesComponent -> socketServer "Emits message:new events after insert"
-        chatComponent -> claudeApi "Tool-use loop with search_found_items" "HTTPS / JSON"
+        chatComponent -> claudeApi "Tool-use loop. Sends conversation + tool schema. Receives text replies or tool-call requests; never grants raw query power to the model." "HTTPS / JSON"
     }
 
     views {
