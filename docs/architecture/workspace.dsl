@@ -5,7 +5,7 @@ workspace "Lost & Found Portal" "Architectural C4 model for the Hunter College L
         // ────────────────────────────────────────────────────────────
         // People
         // ────────────────────────────────────────────────────────────
-        student = person "Student" "A Hunter College student who has lost an item. Files lost-item reports, browses found items, messages admin staff, and queries the Hawk AI assistant to search the database."
+        student = person "Student" "A Hunter College student who has lost an item. Files lost-item reports, messages admin staff, and queries the Hawk AI assistant to search the database."
 
         admin = person "Administrator" "Staff member responsible for the lost-and-found inventory. Adds found items, matches lost reports to recovered items, replies to student messages, and marks cases as resolved."
 
@@ -20,43 +20,43 @@ workspace "Lost & Found Portal" "Architectural C4 model for the Hunter College L
         //   profiles, lost_reports, and messages tables are not exposed
         //   to the model under any circumstance.
         // ────────────────────────────────────────────────────────────
-        claudeApi = softwareSystem "Anthropic Claude API" "Hosted large language model service (Claude Haiku 4.5). Receives user prompts and a tool schema; can only invoke the server-defined search_found_items function. Has no direct database, filesystem, or network access." "External"
+        claudeApi = softwareSystem "Anthropic Claude API" "LLM service (Claude Haiku 4.5). Sandboxed: can only invoke the server-defined search_found_items tool. No direct DB or filesystem access." "External"
 
         // ────────────────────────────────────────────────────────────
         // The Lost & Found Portal system
         // ────────────────────────────────────────────────────────────
-        lafSystem = softwareSystem "Lost & Found Portal" "Tracks lost reports and found items, supports matching workflows, provides real-time messaging between students and admins, and offers an AI-powered search assistant." {
+        lafSystem = softwareSystem "Lost & Found Portal" "Student-side: lets students file lost-item reports and exchange messages with administrators. Admin-side: lets administrators manage the found-items inventory, match reports to recovered items, and resolve cases. Includes Hawk AI, an AI assistant that lets students search by description (admin verifies ownership before any pickup; students never browse the inventory directly)." {
 
-            webApp = container "Web Application" "Single-page application providing the student and admin user interfaces. Built with Vite and React; hosted on Vercel. Talks to the API over HTTPS for REST calls and over WebSocket for real-time message delivery." "React 18, Vite, React Router, socket.io-client"
+            webApp = container "Web Application" "Student and admin SPA. Hosted on Vercel. Communicates with the API over HTTPS (REST) and WebSocket (real-time)." "React 18, Vite, React Router, socket.io-client"
 
-            api = container "API Application" "REST and WebSocket backend. Handles authentication, business logic, image uploads, real-time message broadcasting, and the AI tool-use orchestration. Hosted on Render." "Node.js, Express, Socket.io, @anthropic-ai/sdk, @supabase/supabase-js" {
+            api = container "API Application" "REST + WebSocket backend. Handles auth, business logic, uploads, real-time messaging, and AI orchestration. Hosted on Render." "Node.js, Express, Socket.io" {
 
-                authComponent = component "Auth Routes" "Registration, login, /me. Hashes passwords with bcrypt (10 rounds) and issues 7-day JWTs signed with JWT_SECRET." "Express Router (routes/auth.js)"
+                authComponent = component "Auth Routes" "Register, login, /me. bcrypt + 7-day JWT." "Express Router"
 
-                reportsComponent = component "Reports Routes" "CRUD for lost reports plus match / unmatch / resolve workflows. Match and resolve run as transactions that update both lost_reports and found_items consistently." "Express Router (routes/reports.js)"
+                reportsComponent = component "Reports Routes" "Lost-report CRUD + match / unmatch / resolve (transactional)." "Express Router"
 
-                foundItemsComponent = component "Found Items Routes" "CRUD for found items. Accepts multipart uploads (multer memory storage), pushes the buffer to Supabase Storage, and persists the returned public URL." "Express Router + multer (routes/foundItems.js)"
+                foundItemsComponent = component "Found Items Routes" "Found-item CRUD. Uploads images to Supabase Storage and persists the public URL." "Express + multer"
 
-                messagesComponent = component "Messages Routes" "Send and list messages tied to a lost report. After insert, emits a message:new Socket.io event to the admin room and to the owning student's private room for real-time delivery." "Express Router (routes/messages.js)"
+                messagesComponent = component "Messages Routes" "Send/list messages. After insert, emits a Socket.io message:new event." "Express Router"
 
-                chatComponent = component "Chat Routes" "Hawk AI endpoint. Acts as the security boundary between the LLM and the database. Receives user messages, sends them to the Claude API with a single tool definition (search_found_items), and on tool-call requests runs a hard-coded parameterized SELECT against unclaimed found_items. Claude never sees raw SQL, never composes queries, and only receives item_name, category, location_found, date_found, and description (storage_location is intentionally withheld so it cannot be leaked even under prompt injection). The system prompt enforces a verification-first workflow: Claude must ask the student 2-3 ownership-verification questions before declaring a possible match, and it must always route final pickup through admin via the Messages tab. Tool-use loop is capped at 5 iterations." "Express Router + @anthropic-ai/sdk (routes/chat.js)"
+                chatComponent = component "Chat Routes" "Hawk AI endpoint. Security boundary between Claude and the DB. storage_location is withheld; system prompt enforces verification-first workflow and admin-only pickup." "Express + @anthropic-ai/sdk"
 
-                socketServer = component "Socket.io Server" "WebSocket layer attached to the HTTP server. Authenticates connections by JWT in the handshake; each user joins a private room named user:{id}, and admins also join the shared admin room." "Socket.io (in index.js)"
+                socketServer = component "Socket.io Server" "WebSocket layer. JWT-authenticated; users join user:{id} rooms, admins also join the admin room." "Socket.io"
 
-                authMiddleware = component "Auth Middleware" "Verifies the Bearer JWT, attaches req.user, and rejects expired or invalid tokens. requireAdmin further gates admin-only endpoints." "Express middleware (middleware/auth.js)"
+                authMiddleware = component "Auth Middleware" "Verifies Bearer JWT, attaches req.user. requireAdmin gates admin-only routes." "Express middleware"
 
-                dbPool = component "Database Pool" "PostgreSQL connection pool. Selects between local Postgres and Supabase based on the DB_TARGET environment variable; enforces SSL for Supabase connections." "node-postgres (pg) (db.js)"
+                dbPool = component "Database Pool" "Postgres connection pool. SSL enforced for Supabase." "node-postgres"
             }
 
-            db = container "Database" "Persists the four core tables: profiles, lost_reports, found_items, and messages. Includes foreign-key relationships and status enums." "PostgreSQL 15 (Supabase)" "Database"
+            db = container "Database" "Postgres on Supabase. Tables: profiles, lost_reports, found_items, messages." "PostgreSQL 15" "Database"
 
-            storage = container "Object Storage" "Stores uploaded found-item images in the found-items bucket as public objects. Public URLs are written back to the found_items.image_url column." "Supabase Storage"
+            storage = container "Object Storage" "Supabase Storage. Stores found-item images in the found-items bucket; URLs saved in DB." "Supabase Storage"
         }
 
         // ────────────────────────────────────────────────────────────
         // Context-level relationships
         // ────────────────────────────────────────────────────────────
-        student -> lafSystem "Files lost-item reports, browses found items, messages admin, queries Hawk AI" "HTTPS"
+        student -> lafSystem "Files lost-item reports, messages admin, queries Hawk AI" "HTTPS"
         admin -> lafSystem "Adds found items, matches reports, replies to students, resolves cases" "HTTPS"
         lafSystem -> claudeApi "Sends user prompts plus a single tool schema (search_found_items). No SQL, no user data, no PII leaves the system." "HTTPS / JSON"
 

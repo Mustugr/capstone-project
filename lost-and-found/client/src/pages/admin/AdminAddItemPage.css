@@ -83,6 +83,16 @@
   background: #f8f5ff;
 }
 
+.admin-form-page__upload-area--dragging {
+  border-color: var(--primary);
+  background: #f1ebff;
+  transform: scale(1.01);
+}
+
+.admin-form-page__upload-area--dragging .admin-form-page__upload-placeholder {
+  color: var(--primary);
+}
+
 .admin-form-page__upload-placeholder {
   display: flex;
   flex-direction: column;

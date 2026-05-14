@@ -23,15 +23,45 @@ export default function AdminAddItemPage() {
   const [imagePreview, setImagePreview] = useState(null);
   const [error, setError]             = useState("");
   const [loading, setLoading]         = useState(false);
+  const [isDragging, setIsDragging]   = useState(false);
 
   const handleChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
+  const acceptImageFile = (file) => {
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please upload an image file (JPG, PNG, WEBP)");
+      return;
+    }
+    setError("");
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleImageChange = (e) => {
+    acceptImageFile(e.target.files[0]);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget.contains(e.relatedTarget)) return;
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    acceptImageFile(file);
   };
 
   const handleSubmit = async (e) => {
@@ -111,7 +141,14 @@ export default function AdminAddItemPage() {
             {/* Image upload */}
             <div>
               <label className="admin-form-page__label">Item Photo</label>
-              <div className="admin-form-page__upload-area" onClick={() => fileRef.current.click()}>
+              <div
+                className={`admin-form-page__upload-area${isDragging ? " admin-form-page__upload-area--dragging" : ""}`}
+                onClick={() => fileRef.current.click()}
+                onDragEnter={handleDragOver}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 {imagePreview ? (
                   <img src={imagePreview} alt="preview" className="admin-form-page__preview" />
                 ) : (
@@ -119,7 +156,7 @@ export default function AdminAddItemPage() {
                   <svg className="admin-form-page__upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                   </svg>
-                  <span>Click to upload a photo</span>
+                  <span>{isDragging ? "Drop the photo here" : "Click or drag a photo here"}</span>
                   <span className="admin-form-page__upload-hint">JPG, PNG, WEBP — max 5 MB</span>
                 </div>
                 )}
