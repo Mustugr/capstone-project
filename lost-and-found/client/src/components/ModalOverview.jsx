@@ -7,6 +7,7 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
   const [foundItems, setFoundItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [claim, setClaim] = useState(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -16,6 +17,56 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !report?.id) {
+      setClaim(null);
+      return;
+    }
+    api.get(`/claims/report/${report.id}`)
+      .then(setClaim)
+      .catch(() => setClaim(null));
+  }, [isOpen, report?.id]);
+
+  const refreshClaim = async () => {
+    if (!report?.id) return;
+    try {
+      const fresh = await api.get(`/claims/report/${report.id}`);
+      setClaim(fresh);
+    } catch { /* ignore */ }
+  };
+
+  const handleApproveClaim = async () => {
+    if (!claim || busy) return;
+    setBusy(true);
+    try {
+      await api.patch(`/claims/${claim.id}/approve`, {});
+      await refreshClaim();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRejectClaim = async (fraudulent) => {
+    if (!claim || busy) return;
+    const reason = window.prompt(
+      fraudulent
+        ? "Reason for rejection (fraudulent — student will be locked out of chat for 14 days):"
+        : "Reason for rejection (optional):"
+    );
+    if (reason === null) return;
+    setBusy(true);
+    try {
+      await api.patch(`/claims/${claim.id}/reject`, { reason, is_fraudulent: fraudulent });
+      await refreshClaim();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const matchedItem = foundItems.find(i => i.id === report?.matched_item_id);
 
@@ -110,6 +161,35 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
                 <p style={{ fontSize: 13, marginTop: 12, color: 'var(--muted)' }}>
                   Student: {report.student_name}
                 </p>
+              )}
+
+              {claim && (
+                <div className="claim-panel">
+                  <h2>Hawk AI Claim</h2>
+                  <p className="claim-panel__subtitle">
+                    Submitted {formatDate(claim.created_at)} · Status: <strong>{claim.status}</strong>
+                  </p>
+                  <ul className="claim-panel__fields">
+                    {claim.color && <li><span>Color/material:</span> {claim.color}</li>}
+                    {claim.brand && <li><span>Brand:</span> {claim.brand}</li>}
+                    {claim.contents && <li><span>Contents:</span> {claim.contents}</li>}
+                    {claim.distinguishing_marks && <li><span>Marks:</span> {claim.distinguishing_marks}</li>}
+                    {claim.approximate_location && <li><span>Where:</span> {claim.approximate_location}</li>}
+                    {claim.approximate_date && <li><span>When:</span> {claim.approximate_date}</li>}
+                  </ul>
+                  {claim.status === 'Rejected' && claim.rejected_reason && (
+                    <p className="claim-panel__rejected">Reason: {claim.rejected_reason}{claim.is_fraudulent && ' (flagged as fraudulent)'}</p>
+                  )}
+                  {claim.status === 'Pending Review' && (
+                    <div className="claim-panel__actions">
+                      <button type="button" disabled={busy} onClick={handleApproveClaim}>Approve</button>
+                      <button type="button" disabled={busy} onClick={() => handleRejectClaim(false)}>Reject</button>
+                      <button type="button" className="claim-panel__danger" disabled={busy} onClick={() => handleRejectClaim(true)}>
+                        Reject as Fraudulent
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </>
           )}

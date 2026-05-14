@@ -11,6 +11,7 @@ const reportsRoutes = require('./routes/reports');
 const foundItemsRoutes = require('./routes/foundItems');
 const messagesRoutes = require('./routes/messages');
 const chatRoutes = require('./routes/chat');
+const claimsRoutes = require('./routes/claims');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -41,6 +42,7 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/found-items', foundItemsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/claims', claimsRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
