@@ -6,6 +6,29 @@ const router = express.Router();
 
 const FRAUD_LOCKOUT_DAYS = 14;
 
+const APPROVE_MESSAGE =
+  "Your Hawk AI claim has been approved. Please come to the Lost & Found office during business hours to pick up your item — bring your CUNY ID. If you have any questions, reply to this message.";
+
+const REJECT_MESSAGE =
+  "Your Hawk AI claim was not approved. If you'd like to provide more details or have questions, reply to this message and an admin will follow up.";
+
+const REJECT_FRAUD_MESSAGE =
+  "Your Hawk AI claim was rejected and flagged for review. Your chat access has been temporarily disabled. If you believe this is a mistake, reply to this message and an admin will follow up.";
+
+async function postSystemMessage(client, { io, reportId, studentId, adminId, content }) {
+  const result = await client.query(
+    `INSERT INTO messages (report_id, sender_id, sender_role, content)
+     VALUES ($1, $2, 'admin', $3) RETURNING *`,
+    [reportId, adminId, content]
+  );
+  const message = result.rows[0];
+  if (io) {
+    io.to('admin').emit('message:new', message);
+    io.to(`user:${studentId}`).emit('message:new', message);
+  }
+  return message;
+}
+
 // GET /api/claims — admin lists all claims (filterable by status)
 router.get('/', requireAdmin, async (req, res) => {
   try {
@@ -63,8 +86,11 @@ router.get('/report/:reportId', requireAuth, async (req, res) => {
 
 // PATCH /api/claims/:id/approve — admin marks claim as approved
 router.patch('/:id/approve', requireAdmin, async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { rows } = await pool.query(
+    await client.query('BEGIN');
+
+    const updateRes = await client.query(
       `UPDATE claims
          SET status = 'Approved',
              reviewed_by = $1,
@@ -73,13 +99,30 @@ router.patch('/:id/approve', requireAdmin, async (req, res) => {
        RETURNING *`,
       [req.user.id, req.params.id]
     );
-    if (rows.length === 0) {
+
+    if (updateRes.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Claim not found or already reviewed' });
     }
-    res.json(rows[0]);
+
+    const claim = updateRes.rows[0];
+
+    await postSystemMessage(client, {
+      io: req.app.get('io'),
+      reportId: claim.report_id,
+      studentId: claim.student_id,
+      adminId: req.user.id,
+      content: APPROVE_MESSAGE,
+    });
+
+    await client.query('COMMIT');
+    res.json(claim);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error(err);
     res.status(500).json({ error: 'Server error' });
+  } finally {
+    client.release();
   }
 });
 
@@ -116,6 +159,14 @@ router.patch('/:id/reject', requireAdmin, async (req, res) => {
         [lockUntil, claim.student_id]
       );
     }
+
+    await postSystemMessage(client, {
+      io: req.app.get('io'),
+      reportId: claim.report_id,
+      studentId: claim.student_id,
+      adminId: req.user.id,
+      content: is_fraudulent ? REJECT_FRAUD_MESSAGE : REJECT_MESSAGE,
+    });
 
     await client.query('COMMIT');
     res.json(claim);
