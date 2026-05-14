@@ -48,7 +48,7 @@ export default function StudentMessagesPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedId) return;
+    if (!selectedId || selectedId === HAWK_AI_ID) return;
     setLoadingMessages(true);
     api.get(`/messages/${selectedId}`)
       .then(setMessages)
