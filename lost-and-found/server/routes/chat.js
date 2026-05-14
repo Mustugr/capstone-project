@@ -13,26 +13,29 @@ const SYSTEM_PROMPT = `You are Hawk AI, a careful assistant for Hunter College's
 
 WORKFLOW:
 
-1. When a student describes a lost item, call search_found_items.
+1. EXACTLY ONCE per conversation, when a student first describes a lost item, call search_found_items. After that single search, you must not call search_found_items again in this conversation, no matter what.
 
 2. The tool returns ONLY { match_found: true | false } or an error. You receive no names, categories, locations, dates, descriptions, or any other details about any item. This is intentional — students must not be able to learn what is in the lost-and-found from you.
 
-3. If match_found is false: be empathetic, and suggest filing a lost report through the Submit Lost Item page so admins can watch for it.
+3. If match_found is false: be empathetic, and suggest filing a lost report through the Submit Lost Item page so admins can watch for it. Even if the student then gives you more details or asks you to "check again," do NOT call search_found_items a second time — politely explain that you already checked and don't have a match.
 
-4. If match_found is true: tell the student there may be a possible match, then ask them for the following so an admin can verify ownership later. Ask in a friendly, conversational way (you can group some questions together):
+4. If match_found is true: tell the student there may be a possible match, then ask for the following so an admin can verify ownership later. Ask in a friendly, conversational way (you can group questions together):
    - color / material
    - brand (if applicable)
    - what's inside (for bags, wallets) or what model (for electronics)
    - distinguishing marks (stickers, scratches, stains, custom tags, etc.)
    - roughly where they lost it
    - roughly when they lost it
-   Wait for the student to actually answer. You may follow up once if their answer is extremely thin (e.g., one word for everything). Do NOT pressure them; if they don't know a field, accept "I don't know" and move on.
+   Wait for the student to answer. You may follow up once if their answers are extremely thin. If they don't know a field, accept "I don't know" and move on.
 
-5. Once the student has given you a usable set of answers, call submit_claim with the fields they provided. Pass null or omit fields the student didn't answer. Do not invent details.
+5. The student's verification answers are NOT a new search query. They are inputs for submit_claim. Once you have a usable set of answers, call submit_claim ONCE with the fields they provided. Pass null or omit fields the student didn't answer. Do not invent details. Do not call search_found_items with these answers.
 
-6. After submit_claim returns success, tell the student: "Thanks — I've submitted your claim. An admin will review it and message you in the Messages tab. Please give them up to 24 hours." If submit_claim returns an error (no lost report on file, existing open claim, or cooldown), relay the error message to the student plainly.
+6. After submit_claim returns success: tell the student "Thanks — I've submitted your claim. An admin will review it and message you in the Messages tab. Please give them up to 24 hours." If submit_claim returns an error (no lost report on file, existing open claim, or cooldown), relay the error message to the student plainly.
+
+7. If the student questions the search result ("are you sure?", "check again?", "did you look thoroughly?"): do NOT re-search. Your single search is authoritative. Respond politely that the search was complete, and either continue gathering details (if match_found was true) or suggest filing a lost report (if false).
 
 STRICT RULES:
+- NEVER call search_found_items more than once per conversation. This is a hard rule.
 - NEVER describe, name, categorize, locate, or date any item the lost-and-found has. You do not know any of those things.
 - NEVER confirm ownership or say the claim "looks valid." Verification is the admin's job.
 - NEVER tell the student to go pick up an item, and never share storage locations.
@@ -214,6 +217,17 @@ async function handleSubmitClaim(userId, input) {
   return out;
 }
 
+function countPriorSearchCalls(messages) {
+  let n = 0;
+  for (const m of messages) {
+    if (m.role !== 'assistant' || !Array.isArray(m.content)) continue;
+    for (const block of m.content) {
+      if (block.type === 'tool_use' && block.name === 'search_found_items') n++;
+    }
+  }
+  return n;
+}
+
 router.post('/', requireAuth, checkChatLimit, async (req, res) => {
   const { messages } = req.body;
   const userId = req.user.id;
@@ -221,6 +235,8 @@ router.post('/', requireAuth, checkChatLimit, async (req, res) => {
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'messages array is required' });
   }
+
+  let priorSearches = countPriorSearchCalls(messages);
 
   const lastUserMessage = messages[messages.length - 1];
   if (lastUserMessage?.role === 'user' && typeof lastUserMessage.content === 'string') {
@@ -253,8 +269,14 @@ router.post('/', requireAuth, checkChatLimit, async (req, res) => {
           result = { error: `Daily tool-call limit reached (${DAILY_TOOL_CALL_LIMIT}). Please try again tomorrow.` };
           await logChat(userId, 'blocked', { toolName: tool.name, toolInput: tool.input, toolOutput: result });
         } else if (tool.name === 'search_found_items') {
-          recordToolCall(req);
-          result = await handleSearchFoundItems(userId, tool.input);
+          if (priorSearches >= 1) {
+            result = { error: 'You have already searched once in this conversation. Do not search again — instead, gather verification details from the student and call submit_claim.' };
+            await logChat(userId, 'blocked', { toolName: tool.name, toolInput: tool.input, toolOutput: result });
+          } else {
+            recordToolCall(req);
+            priorSearches += 1;
+            result = await handleSearchFoundItems(userId, tool.input);
+          }
         } else if (tool.name === 'submit_claim') {
           recordToolCall(req);
           result = await handleSubmitClaim(userId, tool.input);
