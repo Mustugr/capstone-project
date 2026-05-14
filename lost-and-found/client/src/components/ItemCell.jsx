@@ -1,7 +1,7 @@
 import './ItemCell.css';
 import { SERVER_BASE } from '../lib/api';
 
-export default function ItemCell({ image, item, category, dateSubmitted, storage, location }) {
+export default function ItemCell({ image, item, category, dateSubmitted, storage, location, onImageClick }) {
   const src = image
     ? image.startsWith('http') ? image : `${SERVER_BASE}${image}`
     : null;
@@ -14,7 +14,12 @@ export default function ItemCell({ image, item, category, dateSubmitted, storage
 
   return (
     <div className="cellContainer">
-      <div className="img_container">
+      <div
+        className={`img_container${onImageClick ? ' img_container--clickable' : ''}`}
+        onClick={onImageClick}
+        role={onImageClick ? 'button' : undefined}
+        tabIndex={onImageClick ? 0 : undefined}
+      >
         {src ? (
           <img src={src} alt={item} />
         ) : (
