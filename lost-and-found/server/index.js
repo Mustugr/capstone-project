@@ -4,6 +4,7 @@ const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const pool = require('./db');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -64,9 +65,37 @@ io.use((socket, next) => {
   }
 });
 
+async function relayTyping(socket, kind, payload) {
+  const reportId = Number(payload?.report_id);
+  if (!Number.isInteger(reportId)) return;
+  try {
+    const { rows } = await pool.query(
+      'SELECT student_id FROM lost_reports WHERE id = $1',
+      [reportId]
+    );
+    if (rows.length === 0) return;
+    const studentId = rows[0].student_id;
+    const out = {
+      report_id: reportId,
+      sender_id: socket.user.id,
+      sender_role: socket.user.role,
+    };
+    if (socket.user.role === 'student') {
+      io.to('admin').emit(kind, out);
+    } else if (socket.user.role === 'admin') {
+      io.to(`user:${studentId}`).emit(kind, out);
+    }
+  } catch (err) {
+    console.error('typing relay error:', err);
+  }
+}
+
 io.on('connection', (socket) => {
   socket.join(`user:${socket.user.id}`);
   if (socket.user.role === 'admin') socket.join('admin');
+
+  socket.on('typing:start', (payload) => relayTyping(socket, 'typing:start', payload));
+  socket.on('typing:stop',  (payload) => relayTyping(socket, 'typing:stop',  payload));
 });
 
 app.set('io', io);

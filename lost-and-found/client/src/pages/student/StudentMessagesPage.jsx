@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Fragment } from "react";
 import StudentSidebar from "../../components/StudentSidebar";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../lib/api";
@@ -22,18 +22,33 @@ const HAWK_WELCOME = {
     "👋 Hi! I'm Hawk AI. Tell me what you lost — I'll search the database before you contact admin. Try: \"I lost a black backpack near the library\".",
 };
 
+function dayLabel(iso) {
+  if (!iso) return "";
+  const msgDate = new Date(iso);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const msgDay = new Date(msgDate); msgDay.setHours(0, 0, 0, 0);
+  const diff = Math.floor((today - msgDay) / 86400000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  return msgDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export default function StudentMessagesPage() {
   const { user } = useAuth();
   const [conversations, setConversations]       = useState([]);
   const [selectedId, setSelectedId]             = useState(null);
   const [messages, setMessages]                 = useState([]);
   const [message, setMessage]                   = useState("");
-  const [loadingConvos, setLoadingConvos]        = useState(true);
-  const [loadingMessages, setLoadingMessages]    = useState(false);
+  const [loadingConvos, setLoadingConvos]       = useState(true);
+  const [loadingMessages, setLoadingMessages]   = useState(false);
   const [hawkMessages, setHawkMessages]         = useState([HAWK_WELCOME]);
   const [hawkInput, setHawkInput]               = useState("");
   const [hawkLoading, setHawkLoading]           = useState(false);
+  const [adminTyping, setAdminTyping]           = useState(false);
+  const [unread, setUnread]                     = useState({});
   const threadRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
 
   const isHawkAI = selectedId === HAWK_AI_ID;
 
@@ -58,7 +73,11 @@ export default function StudentMessagesPage() {
 
   useEffect(() => {
     if (threadRef.current) threadRef.current.scrollTop = threadRef.current.scrollHeight;
-  }, [messages, hawkMessages]);
+  }, [messages, hawkMessages, adminTyping]);
+
+  useEffect(() => {
+    setAdminTyping(false);
+  }, [selectedId]);
 
   useEffect(() => {
     const sock = connectSocket();
@@ -67,6 +86,8 @@ export default function StudentMessagesPage() {
     const onNewMessage = (msg) => {
       if (msg.report_id === selectedId) {
         setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
+      } else if (msg.sender_id !== user?.id) {
+        setUnread((prev) => ({ ...prev, [msg.report_id]: (prev[msg.report_id] || 0) + 1 }));
       }
       setConversations((prev) =>
         prev.map((c) =>
@@ -77,17 +98,67 @@ export default function StudentMessagesPage() {
       );
     };
 
-    sock.on("message:new", onNewMessage);
-    return () => { sock.off("message:new", onNewMessage); };
-  }, [selectedId]);
+    const onTypingStart = (data) => {
+      if (data.report_id === selectedId && data.sender_role === "admin") {
+        setAdminTyping(true);
+      }
+    };
+    const onTypingStop = (data) => {
+      if (data.report_id === selectedId && data.sender_role === "admin") {
+        setAdminTyping(false);
+      }
+    };
+
+    sock.on("message:new",   onNewMessage);
+    sock.on("typing:start",  onTypingStart);
+    sock.on("typing:stop",   onTypingStop);
+    return () => {
+      sock.off("message:new",   onNewMessage);
+      sock.off("typing:start",  onTypingStart);
+      sock.off("typing:stop",   onTypingStop);
+    };
+  }, [selectedId, user?.id]);
+
+  const selectConversation = (id) => {
+    setSelectedId(id);
+    setUnread((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev }; delete next[id]; return next;
+    });
+  };
+
+  const emitTyping = () => {
+    if (!selectedId || selectedId === HAWK_AI_ID) return;
+    const sock = connectSocket();
+    if (!sock) return;
+    if (!isTypingRef.current) {
+      sock.emit("typing:start", { report_id: selectedId });
+      isTypingRef.current = true;
+    }
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      sock.emit("typing:stop", { report_id: selectedId });
+      isTypingRef.current = false;
+    }, 2500);
+  };
+
+  const stopTypingNow = () => {
+    if (!selectedId || selectedId === HAWK_AI_ID) return;
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    if (isTypingRef.current) {
+      const sock = connectSocket();
+      sock?.emit("typing:stop", { report_id: selectedId });
+      isTypingRef.current = false;
+    }
+  };
 
   const handleSend = async () => {
     if (!message.trim() || !selectedId) return;
+    stopTypingNow();
     try {
       const sent = await api.post(`/messages/${selectedId}`, { content: message.trim() });
       setMessages((prev) => prev.some((m) => m.id === sent.id) ? prev : [...prev, sent]);
       setMessage("");
-      // Update last_message in conversation list
       setConversations((prev) =>
         prev.map((c) => c.report_id === selectedId ? { ...c, last_message: sent.content } : c)
       );
@@ -98,6 +169,11 @@ export default function StudentMessagesPage() {
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  };
+
+  const handleMessageChange = (e) => {
+    setMessage(e.target.value);
+    emitTyping();
   };
 
   const handleSendHawk = async () => {
@@ -147,7 +223,7 @@ export default function StudentMessagesPage() {
 
             <button
               type="button"
-              onClick={() => setSelectedId(HAWK_AI_ID)}
+              onClick={() => selectConversation(HAWK_AI_ID)}
               className={`hawk-ai-conversation${isHawkAI ? " active" : ""}`}
             >
               <HawkAvatar size={42} />
@@ -163,11 +239,15 @@ export default function StudentMessagesPage() {
               <p style={{ padding: "20px", color: "var(--muted)", fontSize: 14 }}>No reports yet.</p>
             ) : (
               conversations.map((c) => (
-                <button key={c.report_id} onClick={() => setSelectedId(c.report_id)}
+                <button key={c.report_id} onClick={() => selectConversation(c.report_id)}
                   className={`student-messages__conversation${c.report_id === selectedId ? " active" : ""}`}>
                   <div className="student-messages__conversation-top">
                     <strong>{c.item_name}</strong>
-                    <span className={badgeClass(c.status)}>{c.status}</span>
+                    {unread[c.report_id] ? (
+                      <span className="student-messages__unread">{unread[c.report_id]}</span>
+                    ) : (
+                      <span className={badgeClass(c.status)}>{c.status}</span>
+                    )}
                   </div>
                   <p>{c.last_message || "No messages yet"}</p>
                 </button>
@@ -246,25 +326,41 @@ export default function StudentMessagesPage() {
                   ) : messages.length === 0 ? (
                     <p style={{ color: "var(--muted)", fontSize: 14 }}>No messages yet. Send one below.</p>
                   ) : (
-                    messages.map((msg) => {
+                    messages.map((msg, idx) => {
                       const isMe = msg.sender_id === user?.id || msg.sender_role === "student";
+                      const prev = idx > 0 ? messages[idx - 1] : null;
+                      const showDay = !prev || dayLabel(prev.created_at) !== dayLabel(msg.created_at);
                       return (
-                        <div key={msg.id} className={`student-messages__message-wrap${isMe ? " user" : " admin"}`}>
-                          <div className={`student-messages__bubble${isMe ? " user" : " admin"}`}>
-                            {msg.content}
+                        <Fragment key={msg.id}>
+                          {showDay && (
+                            <div className="student-messages__day-separator">
+                              <span>{dayLabel(msg.created_at)}</span>
+                            </div>
+                          )}
+                          <div className={`student-messages__message-wrap${isMe ? " user" : " admin"}`}>
+                            <div className={`student-messages__bubble${isMe ? " user" : " admin"}`}>
+                              {msg.content}
+                            </div>
+                            <div className="student-messages__time">{formatTime(msg.created_at)}</div>
                           </div>
-                          <div className="student-messages__time">{formatTime(msg.created_at)}</div>
-                        </div>
+                        </Fragment>
                       );
                     })
+                  )}
+                  {adminTyping && (
+                    <div className="student-messages__message-wrap admin">
+                      <div className="student-messages__bubble admin hawk-typing">
+                        <span></span><span></span><span></span>
+                      </div>
+                    </div>
                   )}
                 </div>
 
                 <div className="student-messages__input-row">
-                  <input value={message} onChange={(e) => setMessage(e.target.value)}
+                  <input value={message} onChange={handleMessageChange}
                     onKeyDown={handleKeyDown} placeholder="Type a message..."
                     className="student-input student-messages__input" />
-                  <button onClick={handleSend} className="student-lift-btn">
+                  <button onClick={handleSend} disabled={!message.trim()} className="student-lift-btn">
                     <span className="student-lift-btn__face">Send</span>
                   </button>
                 </div>

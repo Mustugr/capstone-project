@@ -394,3 +394,64 @@
     opacity: 1;
   }
 }
+
+/* ── WhatsApp-style polish ── */
+
+.student-messages__message-wrap {
+  animation: bubbleIn 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes bubbleIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.student-messages__day-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 14px 0 8px;
+}
+
+.student-messages__day-separator::before,
+.student-messages__day-separator::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(17, 17, 17, 0.08);
+}
+
+.student-messages__day-separator span {
+  margin: 0 12px;
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.student-messages__unread {
+  background: var(--accent, #7a5cff);
+  color: #fff;
+  font-family: "Work Sans", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.student-lift-btn:disabled,
+.student-messages__input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.student-lift-btn:disabled .student-lift-btn__face {
+  cursor: not-allowed;
+}
