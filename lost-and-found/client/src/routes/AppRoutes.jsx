@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "../context/AuthContext";
+import { NotificationProvider } from "../context/NotificationContext";
 
 import HomePage         from "../pages/public/HomePage";
 import AboutPage        from "../pages/public/AboutPage";
@@ -38,6 +39,7 @@ export default function AppRoutes() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <NotificationProvider>
         <ScrollToTop />
         <Routes>
           {/* Public */}
@@ -60,6 +62,7 @@ export default function AppRoutes() {
           <Route path="/admin-add"       element={<ProtectedRoute role="admin"><AdminAddItemPage /></ProtectedRoute>} />
           <Route path="/admin-overview"  element={<ProtectedRoute role="admin"><AdminOverview /></ProtectedRoute>} />
         </Routes>
+        </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
   );

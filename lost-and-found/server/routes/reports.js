@@ -48,6 +48,16 @@ router.post('/', requireAuth, async (req, res) => {
          RETURNING *`,
         [ticket, req.user.id, item_name, category, location_lost, date_lost, description, image_url]
       );
+
+      const io = req.app.get('io');
+      if (io) {
+        io.to('admin').emit('report:new', {
+          id: result.rows[0].id,
+          ticket_number: result.rows[0].ticket_number,
+          item_name: result.rows[0].item_name,
+        });
+      }
+
       return res.status(201).json(result.rows[0]);
     } catch (err) {
       if (err.code === '23505' && err.constraint && err.constraint.includes('ticket_number')) {

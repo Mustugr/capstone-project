@@ -1,19 +1,21 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 import "./StudentSidebar.css";
 
 export default function StudentSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { unreadMessages } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
   const links = [
     { label: "Dashboard", path: "/student-dashboard" },
     { label: "Submit Lost Item", path: "/student-report-item" },
     { label: "My Reports", path: "/student-reports" },
-    { label: "Messages", path: "/student-messages" },
+    { label: "Messages", path: "/student-messages", badge: unreadMessages },
   ];
 
   const handleLogout = () => {
@@ -56,7 +58,10 @@ export default function StudentSidebar() {
                   onClick={close}
                   className={`student-sidebar__link ${isActive ? "student-sidebar__link--active" : ""}`}
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  {link.badge ? (
+                    <span className="student-sidebar__badge">{link.badge > 99 ? "99+" : link.badge}</span>
+                  ) : null}
                 </Link>
               );
             })}

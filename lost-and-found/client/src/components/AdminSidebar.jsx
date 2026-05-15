@@ -1,19 +1,21 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationContext";
 import "./AdminSidebar.css";
 
 export default function AdminSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { unreadMessages, pendingReports } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
   const links = [
     { label: "Dashboard", path: "/admin-dashboard" },
-    { label: "Messages", path: "/admin-message" },
+    { label: "Messages", path: "/admin-message", badge: unreadMessages },
     { label: "Add item", path: "/admin-add" },
-    { label: "Overview", path: "/admin-overview" },
+    { label: "Overview", path: "/admin-overview", badge: pendingReports },
   ];
 
   const handleLogout = () => {
@@ -57,7 +59,10 @@ export default function AdminSidebar() {
                   onClick={close}
                   className={`admin-sidebar__link ${isActive ? "admin-sidebar__link--active" : ""}`}
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  {link.badge ? (
+                    <span className="admin-sidebar__badge">{link.badge > 99 ? "99+" : link.badge}</span>
+                  ) : null}
                 </Link>
               );
             })}

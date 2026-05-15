@@ -205,7 +205,10 @@
 }
 
 .student-sidebar__link {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 12px 14px;
   font-family: var(--student-heading-font);
   font-size: 0.78rem;
@@ -215,6 +218,29 @@
   color: rgba(255, 255, 255, 0.5);
   border-left: 3px solid transparent;
   transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.student-sidebar__badge {
+  background: var(--accent, #ffd23f);
+  color: #111;
+  font-family: "Work Sans", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  min-width: 22px;
+  height: 20px;
+  border-radius: 10px;
+  padding: 0 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: studentBadgePop 220ms cubic-bezier(0.22, 1.6, 0.36, 1);
+}
+
+@keyframes studentBadgePop {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
 }
 
 .student-sidebar__link:hover {
