@@ -8,14 +8,14 @@ export default function StudentSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { unreadMessages } = useNotifications();
+  const { unreadTotal } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
   const links = [
     { label: "Dashboard", path: "/student-dashboard" },
     { label: "Submit Lost Item", path: "/student-report-item" },
     { label: "My Reports", path: "/student-reports" },
-    { label: "Messages", path: "/student-messages", badge: unreadMessages },
+    { label: "Messages", path: "/student-messages", badge: unreadTotal },
   ];
 
   const handleLogout = () => {

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, Fragment } from "react";
 import { useSearchParams } from "react-router-dom";
 import AdminSidebar from "../../components/AdminSidebar";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 import { api } from "../../lib/api";
 import { connectSocket } from "../../lib/socket";
 import "./AdminMessagesPage.css";
@@ -19,6 +20,7 @@ function dayLabel(iso) {
 
 export default function AdminMessagesPage() {
   const { user } = useAuth();
+  const { unreadByReport, markReportRead } = useNotifications();
   const [searchParams] = useSearchParams();
   const [conversations, setConversations]    = useState([]);
   const [selectedId, setSelectedId]          = useState(null);
@@ -27,7 +29,6 @@ export default function AdminMessagesPage() {
   const [loadingConvos, setLoadingConvos]    = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [studentTyping, setStudentTyping]    = useState(false);
-  const [unread, setUnread]                  = useState({});
   const threadRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
@@ -65,14 +66,17 @@ export default function AdminMessagesPage() {
   }, [selectedId]);
 
   useEffect(() => {
+    if (selectedId) markReportRead(selectedId);
+  }, [selectedId, markReportRead]);
+
+  useEffect(() => {
     const sock = connectSocket();
     if (!sock) return;
 
     const onNewMessage = (msg) => {
       if (msg.report_id === selectedId) {
         setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
-      } else if (msg.sender_id !== user?.id) {
-        setUnread((prev) => ({ ...prev, [msg.report_id]: (prev[msg.report_id] || 0) + 1 }));
+        if (msg.sender_id !== user?.id) markReportRead(selectedId);
       }
       setConversations((prev) =>
         prev.map((c) =>
@@ -106,10 +110,7 @@ export default function AdminMessagesPage() {
 
   const selectConversation = (id) => {
     setSelectedId(id);
-    setUnread((prev) => {
-      if (!(id in prev)) return prev;
-      const next = { ...prev }; delete next[id]; return next;
-    });
+    if (id) markReportRead(id);
   };
 
   const emitTyping = () => {
@@ -193,8 +194,8 @@ export default function AdminMessagesPage() {
                   <div className="admin-messages__conversation-meta">
                     <span className={badgeClass(c.status)}>{c.status}</span>
                     <p>{c.last_message || "No messages yet"}</p>
-                    {unread[c.report_id] ? (
-                      <span className="admin-messages__unread">{unread[c.report_id]}</span>
+                    {unreadByReport[c.report_id] ? (
+                      <span className="admin-messages__unread">{unreadByReport[c.report_id]}</span>
                     ) : null}
                   </div>
                 </button>

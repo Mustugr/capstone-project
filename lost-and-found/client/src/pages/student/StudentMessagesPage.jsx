@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, Fragment } from "react";
 import StudentSidebar from "../../components/StudentSidebar";
 import { useAuth } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 import { api } from "../../lib/api";
 import { connectSocket } from "../../lib/socket";
 import hawkAiUrl from "../../assets/hawk.svg";
@@ -35,6 +36,7 @@ function dayLabel(iso) {
 
 export default function StudentMessagesPage() {
   const { user } = useAuth();
+  const { unreadByReport, markReportRead } = useNotifications();
   const [conversations, setConversations]       = useState([]);
   const [selectedId, setSelectedId]             = useState(null);
   const [messages, setMessages]                 = useState([]);
@@ -45,7 +47,6 @@ export default function StudentMessagesPage() {
   const [hawkInput, setHawkInput]               = useState("");
   const [hawkLoading, setHawkLoading]           = useState(false);
   const [adminTyping, setAdminTyping]           = useState(false);
-  const [unread, setUnread]                     = useState({});
   const threadRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
@@ -80,14 +81,19 @@ export default function StudentMessagesPage() {
   }, [selectedId]);
 
   useEffect(() => {
+    if (selectedId && selectedId !== HAWK_AI_ID) {
+      markReportRead(selectedId);
+    }
+  }, [selectedId, markReportRead]);
+
+  useEffect(() => {
     const sock = connectSocket();
     if (!sock) return;
 
     const onNewMessage = (msg) => {
       if (msg.report_id === selectedId) {
         setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
-      } else if (msg.sender_id !== user?.id) {
-        setUnread((prev) => ({ ...prev, [msg.report_id]: (prev[msg.report_id] || 0) + 1 }));
+        if (msg.sender_id !== user?.id) markReportRead(selectedId);
       }
       setConversations((prev) =>
         prev.map((c) =>
@@ -121,10 +127,7 @@ export default function StudentMessagesPage() {
 
   const selectConversation = (id) => {
     setSelectedId(id);
-    setUnread((prev) => {
-      if (!(id in prev)) return prev;
-      const next = { ...prev }; delete next[id]; return next;
-    });
+    if (id && id !== HAWK_AI_ID) markReportRead(id);
   };
 
   const emitTyping = () => {
@@ -243,8 +246,8 @@ export default function StudentMessagesPage() {
                   className={`student-messages__conversation${c.report_id === selectedId ? " active" : ""}`}>
                   <div className="student-messages__conversation-top">
                     <strong>{c.item_name}</strong>
-                    {unread[c.report_id] ? (
-                      <span className="student-messages__unread">{unread[c.report_id]}</span>
+                    {unreadByReport[c.report_id] ? (
+                      <span className="student-messages__unread">{unreadByReport[c.report_id]}</span>
                     ) : (
                       <span className={badgeClass(c.status)}>{c.status}</span>
                     )}

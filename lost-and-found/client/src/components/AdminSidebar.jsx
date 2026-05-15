@@ -8,12 +8,12 @@ export default function AdminSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { unreadMessages, pendingReports } = useNotifications();
+  const { unreadTotal, pendingReports } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
   const links = [
     { label: "Dashboard", path: "/admin-dashboard" },
-    { label: "Messages", path: "/admin-message", badge: unreadMessages },
+    { label: "Messages", path: "/admin-message", badge: unreadTotal },
     { label: "Add item", path: "/admin-add" },
     { label: "Overview", path: "/admin-overview", badge: pendingReports },
   ];
