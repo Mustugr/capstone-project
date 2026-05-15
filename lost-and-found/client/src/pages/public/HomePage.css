@@ -922,10 +922,11 @@
     padding: 28px 18px;
   }
 
+  /* On phones the centered, viewport-flush "TO TOP" button covers content
+     anywhere a CTA card lands at the bottom of the screen. Native momentum
+     scrolling makes it redundant on touch anyway. Hide it below 520px. */
   .home-to-top {
-    width: 90px;
-    height: 68px;
-    padding-top: 7px;
+    display: none;
   }
 
   .home-to-top__label {

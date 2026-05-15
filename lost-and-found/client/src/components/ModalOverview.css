@@ -285,3 +285,86 @@ td img {
 .claim-panel__actions .claim-panel__danger:hover {
   background: #fef2f2;
 }
+
+/* ── Mobile breakpoint (≤768px) ── */
+@media (max-width: 768px) {
+  .modal {
+    width: 94%;
+    max-height: 92vh;
+  }
+
+  .modal.active {
+    padding: 22px 14px 18px;
+    overflow-y: auto;
+  }
+
+  .modal h1 {
+    font-size: 18px;
+    margin: 0 0 14px;
+  }
+
+  .modal-close {
+    top: 8px;
+    right: 10px;
+    font-size: 24px;
+    padding: 4px 8px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  /* Stack the two columns vertically */
+  .innerModal {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .innerModal > div {
+    overflow: visible;
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .report {
+    height: auto;
+    padding: 16px 14px;
+  }
+
+  .list_container {
+    padding: 14px 10px;
+  }
+
+  /* Items table: drop image col, compact spacing, allow wrapping */
+  .list_container table {
+    table-layout: auto;
+  }
+
+  .list_container th,
+  .list_container td {
+    padding: 8px 4px;
+    font-size: 11px;
+  }
+
+  .list_container td img {
+    width: 40px;
+  }
+
+  /* Hide "Storage" column on narrow phones — only admin needs it and they can view it on the dashboard */
+  .list_container th:nth-child(5),
+  .list_container td:nth-child(5) {
+    display: none;
+  }
+
+  .MatchedItem {
+    padding: 12px;
+  }
+
+  .claim-panel__actions {
+    gap: 6px;
+  }
+
+  .claim-panel__actions button {
+    flex: 1 1 auto;
+    min-height: 36px;
+    font-size: 12px;
+  }
+}

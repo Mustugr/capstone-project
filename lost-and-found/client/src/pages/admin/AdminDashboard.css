@@ -230,6 +230,8 @@
 @media (max-width: 768px) {
   .admin-found-items {
     padding: 64px 12px 24px;
+    /* flex item must be allowed to shrink below intrinsic content width */
+    min-width: 0;
   }
 
   .admin-found-items__header {
