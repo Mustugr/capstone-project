@@ -21,6 +21,9 @@ export function NotificationProvider({ children }) {
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
 
+  const locationRef = useRef(location);
+  useEffect(() => { locationRef.current = location; }, [location]);
+
   const markReportRead = useCallback((reportId) => {
     setUnreadByReport((prev) => {
       if (!prev[reportId]) return prev;
@@ -45,6 +48,7 @@ export function NotificationProvider({ children }) {
 
     const onNewReport = () => {
       if (userRef.current?.role !== "admin") return;
+      if (locationRef.current?.pathname === OVERVIEW_PATH) return;
       setPendingReports((n) => n + 1);
     };
 

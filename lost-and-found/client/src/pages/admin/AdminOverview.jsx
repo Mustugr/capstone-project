@@ -4,6 +4,7 @@ import AdminSidebar from "../../components/AdminSidebar";
 import "./AdminOverview.css";
 import ModalOverview from "../../components/ModalOverview";
 import { api } from "../../lib/api";
+import { connectSocket } from "../../lib/socket";
 
 export default function AdminOverview() {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -19,6 +20,16 @@ export default function AdminOverview() {
       .then(setReports)
       .catch(console.error)
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const sock = connectSocket();
+    if (!sock) return;
+    const onNewReport = () => {
+      api.get("/reports").then(setReports).catch(console.error);
+    };
+    sock.on("report:new", onNewReport);
+    return () => sock.off("report:new", onNewReport);
   }, []);
 
   const handleUpdateReport = (updatedReport) => {
