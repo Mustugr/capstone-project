@@ -81,6 +81,8 @@
   gap: 8px;
   background: #fafafa;
   text-align: center;
+  overflow-y: auto;
+  height: 100%;
 }
 
 .report h2 {
