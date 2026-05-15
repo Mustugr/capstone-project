@@ -97,6 +97,28 @@
 .student-dashboard__table-header {
   padding: 22px 24px;
   border-bottom: 1px solid rgba(17, 17, 17, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.student-dashboard__view-all {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--primary);
+  padding: 0;
+  white-space: nowrap;
+}
+
+.student-dashboard__view-all:hover {
+  text-decoration: underline;
 }
 
 /* ── Mobile breakpoint (≤768px) ── */

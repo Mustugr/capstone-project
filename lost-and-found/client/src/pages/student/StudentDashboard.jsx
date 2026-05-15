@@ -57,8 +57,19 @@ export default function StudentDashboard() {
 
         <div className="student-card student-dashboard__table">
           <div className="student-dashboard__table-header">
-            <span className="student-eyebrow">Activity</span>
-            <h2 className="student-section-title">Recent Reports</h2>
+            <div>
+              <span className="student-eyebrow">Activity</span>
+              <h2 className="student-section-title">Recent Reports</h2>
+            </div>
+            {reports.length > 5 && (
+              <button
+                type="button"
+                onClick={() => navigate("/student-reports")}
+                className="student-dashboard__view-all"
+              >
+                View all →
+              </button>
+            )}
           </div>
 
           {loading ? (
