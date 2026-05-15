@@ -57,7 +57,8 @@ export default function StudentMessagesPage() {
     api.get("/messages")
       .then((data) => {
         setConversations(data);
-        if (data.length > 0) setSelectedId(data[0].report_id);
+        const isDesktop = !window.matchMedia("(max-width: 768px)").matches;
+        if (isDesktop && data.length > 0) setSelectedId(data[0].report_id);
       })
       .catch(console.error)
       .finally(() => setLoadingConvos(false));
@@ -217,7 +218,7 @@ export default function StudentMessagesPage() {
       <StudentSidebar />
 
       <main className="student-messages">
-        <div className="student-messages__layout">
+        <div className={`student-messages__layout${selectedId ? " student-messages__layout--thread-open" : ""}`}>
           <aside className="student-card student-messages__left">
             <div className="student-messages__left-header">
               <span className="student-eyebrow">Inbox</span>
@@ -263,6 +264,14 @@ export default function StudentMessagesPage() {
             {isHawkAI ? (
               <>
                 <div className="hawk-ai-header">
+                  <button
+                    type="button"
+                    className="student-messages__back"
+                    onClick={() => setSelectedId(null)}
+                    aria-label="Back to conversations"
+                  >
+                    ‹
+                  </button>
                   <HawkAvatar size={44} />
                   <div>
                     <h2 className="hawk-ai-header__title">Hawk AI</h2>
@@ -317,8 +326,18 @@ export default function StudentMessagesPage() {
             ) : (
               <>
                 <div className="student-messages__header">
-                  <span className="student-eyebrow">Case</span>
-                  <h2 className="student-messages__title">{selected.item_name}</h2>
+                  <button
+                    type="button"
+                    className="student-messages__back"
+                    onClick={() => setSelectedId(null)}
+                    aria-label="Back to conversations"
+                  >
+                    ‹
+                  </button>
+                  <div className="student-messages__header-text">
+                    <span className="student-eyebrow">Case</span>
+                    <h2 className="student-messages__title">{selected.item_name}</h2>
+                  </div>
                   <div className="student-messages__badges">
                     {selected.ticket_number && <span className="ticket-tag">{selected.ticket_number}</span>}
                     <span className={badgeClass(selected.status)}>{selected.status}</span>

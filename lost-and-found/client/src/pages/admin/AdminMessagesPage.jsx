@@ -38,9 +38,10 @@ export default function AdminMessagesPage() {
       .then((data) => {
         setConversations(data);
         const paramId = searchParams.get("reportId");
+        const isDesktop = !window.matchMedia("(max-width: 768px)").matches;
         if (paramId) {
           setSelectedId(Number(paramId));
-        } else if (data.length > 0) {
+        } else if (isDesktop && data.length > 0) {
           setSelectedId(data[0].report_id);
         }
       })
@@ -174,7 +175,7 @@ export default function AdminMessagesPage() {
       <AdminSidebar />
 
       <main className="admin-messages">
-        <div className="admin-messages__layout">
+        <div className={`admin-messages__layout${selectedId ? " admin-messages__layout--thread-open" : ""}`}>
           <aside className="admin-messages__left">
             <div className="admin-messages__left-header">Messages</div>
 
@@ -211,7 +212,17 @@ export default function AdminMessagesPage() {
             ) : (
               <>
                 <div className="admin-messages__header">
-                  <h2>{selected.item_name}</h2>
+                  <button
+                    type="button"
+                    className="admin-messages__back"
+                    onClick={() => setSelectedId(null)}
+                    aria-label="Back to conversations"
+                  >
+                    ‹
+                  </button>
+                  <div className="admin-messages__header-text">
+                    <h2>{selected.item_name}</h2>
+                  </div>
                   <div className="admin-messages__badges">
                     {selected.ticket_number && <span className="ticket-tag">{selected.ticket_number}</span>}
                     <span className={badgeClass(selected.status)}>{selected.status}</span>
