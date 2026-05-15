@@ -33,7 +33,8 @@ export default function AdminOverview() {
       const matchesSearch =
         report.item_name.toLowerCase().includes(q) ||
         (report.category || "").toLowerCase().includes(q) ||
-        report.status.toLowerCase().includes(q);
+        report.status.toLowerCase().includes(q) ||
+        (report.ticket_number || "").toLowerCase().includes(q);
       return matchesFilter && matchesSearch;
     });
   }, [activeFilter, searchTerm, reports]);
@@ -85,6 +86,7 @@ export default function AdminOverview() {
               <table className="section-table">
                 <thead>
                   <tr>
+                    <th>Ticket</th>
                     <th>Item</th>
                     <th>Category</th>
                     <th>Date Submitted</th>
@@ -97,6 +99,7 @@ export default function AdminOverview() {
                   {filteredReports.length > 0 ? (
                     filteredReports.map((report) => (
                       <tr key={report.id}>
+                        <td data-label="Ticket"><span className="ticket-tag">{report.ticket_number || "—"}</span></td>
                         <td data-label="Item">{report.item_name}</td>
                         <td data-label="Category">{report.category || "—"}</td>
                         <td data-label="Date">{formatDate(report.created_at)}</td>
@@ -124,7 +127,7 @@ export default function AdminOverview() {
                     ))
                   ) : (
                     <tr>
-                      <td className="admin-reports__empty" colSpan="6">No reports found.</td>
+                      <td className="admin-reports__empty" colSpan="7">No reports found.</td>
                     </tr>
                   )}
                 </tbody>

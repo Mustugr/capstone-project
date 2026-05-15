@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { generateTicket } = require('../utils/ticket');
 
 const router = express.Router();
 
@@ -36,18 +37,28 @@ router.post('/', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'Item name is required' });
   }
 
-  try {
-    const result = await pool.query(
-      `INSERT INTO lost_reports (student_id, item_name, category, location_lost, date_lost, description, image_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [req.user.id, item_name, category, location_lost, date_lost, description, image_url]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+  const MAX_ATTEMPTS = 5;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    try {
+      const ticket = generateTicket();
+      const result = await pool.query(
+        `INSERT INTO lost_reports
+           (ticket_number, student_id, item_name, category, location_lost, date_lost, description, image_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`,
+        [ticket, req.user.id, item_name, category, location_lost, date_lost, description, image_url]
+      );
+      return res.status(201).json(result.rows[0]);
+    } catch (err) {
+      if (err.code === '23505' && err.constraint && err.constraint.includes('ticket_number')) {
+        continue; // collision — try a new ticket
+      }
+      console.error(err);
+      return res.status(500).json({ error: 'Server error' });
+    }
   }
+
+  res.status(500).json({ error: 'Could not generate a unique ticket. Please try again.' });
 });
 
 // GET /api/reports/:id — get single report (student owns it or admin)

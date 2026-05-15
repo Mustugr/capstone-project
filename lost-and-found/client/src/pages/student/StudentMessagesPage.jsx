@@ -249,6 +249,7 @@ export default function StudentMessagesPage() {
                       <span className={badgeClass(c.status)}>{c.status}</span>
                     )}
                   </div>
+                  {c.ticket_number && <span className="ticket-tag ticket-tag--sm">{c.ticket_number}</span>}
                   <p>{c.last_message || "No messages yet"}</p>
                 </button>
               ))
@@ -316,6 +317,7 @@ export default function StudentMessagesPage() {
                   <span className="student-eyebrow">Case</span>
                   <h2 className="student-messages__title">{selected.item_name}</h2>
                   <div className="student-messages__badges">
+                    {selected.ticket_number && <span className="ticket-tag">{selected.ticket_number}</span>}
                     <span className={badgeClass(selected.status)}>{selected.status}</span>
                   </div>
                 </div>

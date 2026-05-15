@@ -6,14 +6,14 @@ const router = express.Router();
 
 const FRAUD_LOCKOUT_DAYS = 14;
 
-const APPROVE_MESSAGE =
-  "Your Hawk AI claim has been approved. Please come to the Lost & Found office during business hours to pick up your item — bring your CUNY ID. If you have any questions, reply to this message.";
+const approveMessage = (ticket) =>
+  `Your Hawk AI claim for ticket ${ticket} has been approved. Please come to the Lost & Found office during business hours to pick up your item — bring your CUNY ID. If you have any questions, reply to this message.`;
 
-const REJECT_MESSAGE =
-  "Your Hawk AI claim was not approved. If you'd like to provide more details or have questions, reply to this message and an admin will follow up.";
+const rejectMessage = (ticket) =>
+  `Your Hawk AI claim for ticket ${ticket} was not approved. If you'd like to provide more details or have questions, reply to this message and an admin will follow up.`;
 
-const REJECT_FRAUD_MESSAGE =
-  "Your Hawk AI claim was rejected and flagged for review. Your chat access has been temporarily disabled. If you believe this is a mistake, reply to this message and an admin will follow up.";
+const rejectFraudMessage = (ticket) =>
+  `Your Hawk AI claim for ticket ${ticket} was rejected and flagged for review. Your chat access has been temporarily disabled. If you believe this is a mistake, reply to this message and an admin will follow up.`;
 
 async function postSystemMessage(client, { io, reportId, studentId, adminId, content }) {
   const result = await client.query(
@@ -107,12 +107,18 @@ router.patch('/:id/approve', requireAdmin, async (req, res) => {
 
     const claim = updateRes.rows[0];
 
+    const ticketRes = await client.query(
+      'SELECT ticket_number FROM lost_reports WHERE id = $1',
+      [claim.report_id]
+    );
+    const ticket = ticketRes.rows[0]?.ticket_number || '—';
+
     await postSystemMessage(client, {
       io: req.app.get('io'),
       reportId: claim.report_id,
       studentId: claim.student_id,
       adminId: req.user.id,
-      content: APPROVE_MESSAGE,
+      content: approveMessage(ticket),
     });
 
     await client.query('COMMIT');
@@ -160,12 +166,18 @@ router.patch('/:id/reject', requireAdmin, async (req, res) => {
       );
     }
 
+    const ticketRes = await client.query(
+      'SELECT ticket_number FROM lost_reports WHERE id = $1',
+      [claim.report_id]
+    );
+    const ticket = ticketRes.rows[0]?.ticket_number || '—';
+
     await postSystemMessage(client, {
       io: req.app.get('io'),
       reportId: claim.report_id,
       studentId: claim.student_id,
       adminId: req.user.id,
-      content: is_fraudulent ? REJECT_FRAUD_MESSAGE : REJECT_MESSAGE,
+      content: is_fraudulent ? rejectFraudMessage(ticket) : rejectMessage(ticket),
     });
 
     await client.query('COMMIT');

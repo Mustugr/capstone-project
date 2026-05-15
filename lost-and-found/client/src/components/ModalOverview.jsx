@@ -137,6 +137,9 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
           {report && (
             <>
               <h2>Item Details</h2>
+              {report.ticket_number && (
+                <p><span className="ticket-tag">{report.ticket_number}</span></p>
+              )}
               <p><strong>{report.item_name}</strong></p>
               <p>{report.category || 'No category'}</p>
               <p>{formatDate(report.created_at)}</p>

@@ -27,7 +27,8 @@ export default function StudentReportsPage() {
       const matchesSearch =
         r.item_name.toLowerCase().includes(q) ||
         (r.category || "").toLowerCase().includes(q) ||
-        r.status.toLowerCase().includes(q);
+        r.status.toLowerCase().includes(q) ||
+        (r.ticket_number || "").toLowerCase().includes(q);
       return matchesFilter && matchesSearch;
     });
   }, [reports, activeFilter, searchTerm]);
@@ -71,6 +72,7 @@ export default function StudentReportsPage() {
               <table className="student-table">
                 <thead>
                   <tr>
+                    <th>Ticket</th>
                     <th>Item</th>
                     <th>Category</th>
                     <th>Date Submitted</th>
@@ -82,6 +84,7 @@ export default function StudentReportsPage() {
                   {filteredReports.length > 0 ? (
                     filteredReports.map((report) => (
                       <tr key={report.id}>
+                        <td data-label="Ticket"><span className="ticket-tag">{report.ticket_number || "—"}</span></td>
                         <td data-label="Item">{report.item_name}</td>
                         <td data-label="Category">{report.category || "—"}</td>
                         <td data-label="Date">{formatDate(report.created_at)}</td>
@@ -95,7 +98,7 @@ export default function StudentReportsPage() {
                     ))
                   ) : (
                     <tr>
-                      <td className="student-reports__empty" colSpan="5">No reports found.</td>
+                      <td className="student-reports__empty" colSpan="6">No reports found.</td>
                     </tr>
                   )}
                 </tbody>
@@ -112,6 +115,9 @@ export default function StudentReportsPage() {
             <button className="sr-modal__close" onClick={() => setSelected(null)}>✕</button>
             <span className="sr-modal__heading">Report Details</span>
             <div className="sr-modal__panel">
+              {selected.ticket_number && (
+                <span className="ticket-tag" style={{ marginBottom: 8, display: "inline-block" }}>{selected.ticket_number}</span>
+              )}
               <h2 className="sr-modal__item-name">{selected.item_name}</h2>
               <span className={statusClass(selected.status)} style={{ marginBottom: 16, display: "inline-block" }}>
                 {selected.status}

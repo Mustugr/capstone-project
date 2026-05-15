@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS found_items (
 
 CREATE TABLE IF NOT EXISTS lost_reports (
   id              SERIAL PRIMARY KEY,
+  ticket_number   VARCHAR(20) UNIQUE NOT NULL,
   student_id      INTEGER REFERENCES profiles(id) ON DELETE CASCADE,
   item_name       VARCHAR(100) NOT NULL,
   category        VARCHAR(50),

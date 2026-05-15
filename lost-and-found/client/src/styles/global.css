@@ -161,6 +161,32 @@ img {
   color: #ffffff;
 }
 
+.ticket-tag {
+  display: inline-block;
+  padding: 4px 9px;
+  background: #f4f0ff;
+  color: var(--primary);
+  border: 1px solid rgba(122, 92, 255, 0.25);
+  font-family: "Work Sans", Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.ticket-tag--sm {
+  font-size: 11px;
+  padding: 2px 7px;
+}
+
+.ticket-tag--lg {
+  font-size: 22px;
+  padding: 12px 22px;
+  letter-spacing: 0.08em;
+  margin-top: 8px;
+}
+
 .primary-btn {
   background: var(--primary);
   color: white;

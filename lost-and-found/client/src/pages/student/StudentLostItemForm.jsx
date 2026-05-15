@@ -16,8 +16,9 @@ export default function StudentLostItemForm() {
     itemName: "", category: "", locationLost: "",
     dateLost: "", description: "",
   });
-  const [error, setError]     = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [created, setCreated]   = useState(null);
 
   const handleChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -28,14 +29,14 @@ export default function StudentLostItemForm() {
     setError("");
     setLoading(true);
     try {
-      await api.post("/reports", {
+      const report = await api.post("/reports", {
         item_name:     formData.itemName,
         category:      formData.category,
         location_lost: formData.locationLost,
         date_lost:     formData.dateLost || null,
         description:   formData.description,
       });
-      navigate("/student-reports");
+      setCreated(report);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -49,6 +50,34 @@ export default function StudentLostItemForm() {
 
       <main className="student-form-page">
         <div className="student-card student-form-page__card">
+          {created ? (
+            <div className="student-form-page__success">
+              <span className="student-eyebrow">Report Submitted</span>
+              <h1 className="student-form-page__title">You're all set</h1>
+              <p className="student-form-page__subtitle">
+                Save your ticket number — admins will reference it when they contact you.
+              </p>
+              <div className="student-form-page__ticket">
+                <span className="student-eyebrow">Your Ticket</span>
+                <div className="ticket-tag ticket-tag--lg">{created.ticket_number}</div>
+              </div>
+              <p style={{ marginTop: 16, color: "var(--muted)", fontSize: 14 }}>
+                Item: <strong>{created.item_name}</strong>
+              </p>
+              <div style={{ display: "flex", gap: 12, marginTop: 24, flexWrap: "wrap" }}>
+                <button type="button" className="student-lift-btn" onClick={() => navigate("/student-reports")}>
+                  <span className="student-lift-btn__face">View My Reports</span>
+                </button>
+                <button type="button" className="student-lift-btn student-lift-btn--ghost" onClick={() => {
+                  setCreated(null);
+                  setFormData({ itemName: "", category: "", locationLost: "", dateLost: "", description: "" });
+                }}>
+                  <span className="student-lift-btn__face">Submit Another</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+          <>
           <span className="student-eyebrow">New Submission</span>
           <h1 className="student-form-page__title">Lost Item Form</h1>
           <p className="student-form-page__subtitle">
@@ -94,6 +123,8 @@ export default function StudentLostItemForm() {
               <span className="student-lift-btn__face">{loading ? "Submitting..." : "Submit Report"}</span>
             </button>
           </form>
+          </>
+          )}
         </div>
       </main>
     </div>

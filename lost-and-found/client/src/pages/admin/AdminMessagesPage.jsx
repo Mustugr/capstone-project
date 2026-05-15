@@ -189,6 +189,7 @@ export default function AdminMessagesPage() {
                     <strong>{c.item_name}</strong>
                     <span>{c.student_name}</span>
                   </div>
+                  {c.ticket_number && <span className="ticket-tag ticket-tag--sm">{c.ticket_number}</span>}
                   <div className="admin-messages__conversation-meta">
                     <span className={badgeClass(c.status)}>{c.status}</span>
                     <p>{c.last_message || "No messages yet"}</p>
@@ -211,6 +212,7 @@ export default function AdminMessagesPage() {
                 <div className="admin-messages__header">
                   <h2>{selected.item_name}</h2>
                   <div className="admin-messages__badges">
+                    {selected.ticket_number && <span className="ticket-tag">{selected.ticket_number}</span>}
                     <span className={badgeClass(selected.status)}>{selected.status}</span>
                     {selected.student_name && (
                       <span className="status-badge status-pending">{selected.student_name}</span>

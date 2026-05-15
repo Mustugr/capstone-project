@@ -78,6 +78,7 @@ export default function StudentDashboard() {
             <table className="student-table">
               <thead>
                 <tr>
+                  <th>Ticket</th>
                   <th>Item</th>
                   <th>Date</th>
                   <th>Status</th>
@@ -86,10 +87,11 @@ export default function StudentDashboard() {
               </thead>
               <tbody>
                 {reports.length === 0 ? (
-                  <tr><td colSpan="4" style={{ padding: "24px", color: "var(--muted)", textAlign: "center" }}>No reports yet. <button className="auth-text-link" onClick={() => navigate("/student-report-item")} style={{background:"none",border:"none",cursor:"pointer",color:"var(--primary)",fontWeight:700}}>Submit one →</button></td></tr>
+                  <tr><td colSpan="5" style={{ padding: "24px", color: "var(--muted)", textAlign: "center" }}>No reports yet. <button className="auth-text-link" onClick={() => navigate("/student-report-item")} style={{background:"none",border:"none",cursor:"pointer",color:"var(--primary)",fontWeight:700}}>Submit one →</button></td></tr>
                 ) : (
                   reports.slice(0, 5).map((report) => (
                     <tr key={report.id}>
+                      <td data-label="Ticket"><span className="ticket-tag">{report.ticket_number || "—"}</span></td>
                       <td data-label="Item">{report.item_name}</td>
                       <td data-label="Date">{formatDate(report.created_at)}</td>
                       <td data-label="Status"><span className={statusClass(report.status)}>{report.status}</span></td>
