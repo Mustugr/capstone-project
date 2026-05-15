@@ -5,6 +5,7 @@ import "./AdminOverview.css";
 import ModalOverview from "../../components/ModalOverview";
 import { api } from "../../lib/api";
 import { connectSocket } from "../../lib/socket";
+import { useNotifications } from "../../context/NotificationContext";
 
 export default function AdminOverview() {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -14,6 +15,7 @@ export default function AdminOverview() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { markReportViewed } = useNotifications();
 
   useEffect(() => {
     api.get("/reports")
@@ -35,6 +37,19 @@ export default function AdminOverview() {
   const handleUpdateReport = (updatedReport) => {
     setReports(prev => prev.map(r => r.id === updatedReport.id ? updatedReport : r));
     setSelectedReport(updatedReport);
+  };
+
+  const handleViewReport = async (report) => {
+    setSelectedReport(report);
+    setVisibility(true);
+    if (report.viewed_by_admin) return;
+    try {
+      await api.patch(`/reports/${report.id}/viewed`, {});
+      setReports((prev) => prev.map((r) => r.id === report.id ? { ...r, viewed_by_admin: true } : r));
+      markReportViewed();
+    } catch (err) {
+      console.error("mark report viewed failed:", err);
+    }
   };
 
   const filteredReports = useMemo(() => {
@@ -110,7 +125,10 @@ export default function AdminOverview() {
                   {filteredReports.length > 0 ? (
                     filteredReports.map((report) => (
                       <tr key={report.id}>
-                        <td data-label="Ticket"><span className="ticket-tag">{report.ticket_number || "—"}</span></td>
+                        <td data-label="Ticket">
+                          <span className="ticket-tag">{report.ticket_number || "—"}</span>
+                          {!report.viewed_by_admin && <span className="admin-reports__new-badge">NEW</span>}
+                        </td>
                         <td data-label="Item">{report.item_name}</td>
                         <td data-label="Category">{report.category || "—"}</td>
                         <td data-label="Date">{formatDate(report.created_at)}</td>
@@ -126,10 +144,7 @@ export default function AdminOverview() {
                         <td data-label="Details">
                           <button
                             className="admin-lift-btn"
-                            onClick={() => {
-                              setSelectedReport(report);
-                              setVisibility(true);
-                            }}
+                            onClick={() => handleViewReport(report)}
                           >
                             <span className="admin-lift-btn__face">View</span>
                           </button>

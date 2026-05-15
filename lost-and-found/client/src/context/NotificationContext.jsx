@@ -1,28 +1,23 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import { connectSocket } from "../lib/socket";
-
-const OVERVIEW_PATH = "/admin-overview";
+import { api } from "../lib/api";
 
 const NotificationContext = createContext({
   unreadByReport: {},
   unreadTotal: 0,
   pendingReports: 0,
   markReportRead: () => {},
+  markReportViewed: () => {},
 });
 
 export function NotificationProvider({ children }) {
   const { user } = useAuth();
-  const location = useLocation();
   const [unreadByReport, setUnreadByReport] = useState({});
   const [pendingReports, setPendingReports] = useState(0);
 
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
-
-  const locationRef = useRef(location);
-  useEffect(() => { locationRef.current = location; }, [location]);
 
   const markReportRead = useCallback((reportId) => {
     setUnreadByReport((prev) => {
@@ -32,6 +27,20 @@ export function NotificationProvider({ children }) {
       return next;
     });
   }, []);
+
+  // Decrement the unviewed-reports count by one. Caller is responsible for
+  // having already PATCHed the report viewed server-side. Clamped at 0.
+  const markReportViewed = useCallback(() => {
+    setPendingReports((n) => Math.max(0, n - 1));
+  }, []);
+
+  // Admin: fetch the persistent unviewed-reports count on login / session restore.
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    api.get("/reports/unviewed-count")
+      .then((data) => setPendingReports(data?.count ?? 0))
+      .catch(console.error);
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -48,7 +57,6 @@ export function NotificationProvider({ children }) {
 
     const onNewReport = () => {
       if (userRef.current?.role !== "admin") return;
-      if (locationRef.current?.pathname === OVERVIEW_PATH) return;
       setPendingReports((n) => n + 1);
     };
 
@@ -60,18 +68,14 @@ export function NotificationProvider({ children }) {
     };
   }, [user]);
 
-  useEffect(() => {
-    if (location.pathname === OVERVIEW_PATH) setPendingReports(0);
-  }, [location.pathname]);
-
   const unreadTotal = useMemo(
     () => Object.values(unreadByReport).reduce((a, b) => a + b, 0),
     [unreadByReport]
   );
 
   const value = useMemo(
-    () => ({ unreadByReport, unreadTotal, pendingReports, markReportRead }),
-    [unreadByReport, unreadTotal, pendingReports, markReportRead]
+    () => ({ unreadByReport, unreadTotal, pendingReports, markReportRead, markReportViewed }),
+    [unreadByReport, unreadTotal, pendingReports, markReportRead, markReportViewed]
   );
 
   return (

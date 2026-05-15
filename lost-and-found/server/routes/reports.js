@@ -71,6 +71,20 @@ router.post('/', requireAuth, async (req, res) => {
   res.status(500).json({ error: 'Could not generate a unique ticket. Please try again.' });
 });
 
+// GET /api/reports/unviewed-count — admin: how many lost_reports the admin hasn't opened yet.
+// Declared BEFORE the `:id` route so Express doesn't treat "unviewed-count" as an id.
+router.get('/unviewed-count', requireAdmin, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT COUNT(*)::int AS count FROM lost_reports WHERE viewed_by_admin = false'
+    );
+    res.json({ count: rows[0].count });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/reports/:id — get single report (student owns it or admin)
 router.get('/:id', requireAuth, async (req, res) => {
   try {
@@ -169,6 +183,24 @@ router.patch('/:id/unmatch', requireAdmin, async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   } finally {
     client.release();
+  }
+});
+
+// PATCH /api/reports/:id/viewed — admin marks a single report as viewed.
+// Idempotent: no-op if already viewed.
+router.patch('/:id/viewed', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `UPDATE lost_reports SET viewed_by_admin = true
+        WHERE id = $1
+        RETURNING id, viewed_by_admin`,
+      [req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Report not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
