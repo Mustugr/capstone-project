@@ -450,7 +450,7 @@
 .admin-messages__bubble.admin-typing-bubble span {
   width: 7px;
   height: 7px;
-  background: var(--muted);
+  background: #5d2299;
   border-radius: 50%;
   display: inline-block;
   animation: hawkPulse 1.2s ease-in-out infinite;
