@@ -54,14 +54,26 @@ const io = new Server(httpServer, {
   },
 });
 
-io.use((socket, next) => {
+io.use(async (socket, next) => {
   const token = socket.handshake.auth?.token;
   if (!token) return next(new Error('No token'));
+  let decoded;
   try {
-    socket.user = jwt.verify(token, process.env.JWT_SECRET);
-    next();
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
   } catch {
-    next(new Error('Invalid token'));
+    return next(new Error('Invalid token'));
+  }
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, email, role FROM profiles WHERE id = $1',
+      [decoded.id]
+    );
+    if (rows.length === 0) return next(new Error('User not found'));
+    socket.user = { id: rows[0].id, email: rows[0].email, role: rows[0].role };
+    next();
+  } catch (err) {
+    console.error('socket auth db error:', err);
+    next(new Error('Auth error'));
   }
 });
 

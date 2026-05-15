@@ -12,6 +12,12 @@ export function connectSocket() {
       auth: { token },
       transports: ['websocket', 'polling'],
     });
+    socket.on('connect_error', (err) => {
+      console.warn('[socket] connect_error:', err.message);
+    });
+    socket.on('disconnect', (reason) => {
+      console.warn('[socket] disconnect:', reason);
+    });
   }
   return socket;
 }
