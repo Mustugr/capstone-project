@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import StudentSidebar from "../../components/StudentSidebar";
 import { api } from "../../lib/api";
 import "./StudentReportsPage.css";
@@ -78,6 +79,7 @@ export default function StudentReportsPage() {
                     <th>Date Submitted</th>
                     <th>Status</th>
                     <th>Details</th>
+                    <th>Chat</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -94,11 +96,16 @@ export default function StudentReportsPage() {
                             <span className="student-lift-btn__face">View</span>
                           </button>
                         </td>
+                        <td data-label="Chat">
+                          <Link to={`/student-messages?reportId=${report.id}`} className="student-lift-btn">
+                            <span className="student-lift-btn__face">Chat</span>
+                          </Link>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td className="student-reports__empty" colSpan="6">No reports found.</td>
+                      <td className="student-reports__empty" colSpan="7">No reports found.</td>
                     </tr>
                   )}
                 </tbody>

@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, Fragment } from "react";
+import { useSearchParams } from "react-router-dom";
 import StudentSidebar from "../../components/StudentSidebar";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
@@ -37,6 +38,7 @@ function dayLabel(iso) {
 export default function StudentMessagesPage() {
   const { user } = useAuth();
   const { unreadByReport, markReportRead } = useNotifications();
+  const [searchParams] = useSearchParams();
   const [conversations, setConversations]       = useState([]);
   const [selectedId, setSelectedId]             = useState(null);
   const [messages, setMessages]                 = useState([]);
@@ -57,8 +59,13 @@ export default function StudentMessagesPage() {
     api.get("/messages")
       .then((data) => {
         setConversations(data);
+        const paramId = searchParams.get("reportId");
         const isDesktop = !window.matchMedia("(max-width: 768px)").matches;
-        if (isDesktop && data.length > 0) setSelectedId(data[0].report_id);
+        if (paramId) {
+          setSelectedId(Number(paramId));
+        } else if (isDesktop && data.length > 0) {
+          setSelectedId(data[0].report_id);
+        }
       })
       .catch(console.error)
       .finally(() => setLoadingConvos(false));
