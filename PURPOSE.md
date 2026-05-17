@@ -78,12 +78,20 @@ There is no public/anonymous view of the lost-and-found inventory. Found items a
   - Day separators ("Today", "Yesterday", "May 12, 2026")
   - Per-conversation unread badges in the sidebar list
   - Slide-in animation on new bubbles
+  - On mobile, the conversation list and the open thread swap (back arrow returns to list)
 
 ### Admin-facing pages
 - **`AdminDashboard.jsx`** — Photo card grid of all found items, filterable by category. Click an item's image → modal with full details including description.
 - **`AdminAddItemPage.jsx`** — Add a found item: name, category, location, date, description, storage location, photo (drag-and-drop or click upload, max 5 MB, stored in Supabase Storage).
-- **`AdminOverview.jsx`** — Browse all student lost reports with status filter and ticket-aware search. Open a report in `ModalOverview` to: view the **Hawk AI Claim panel** (structured ownership fields), match the report to a found item, approve / reject / reject-as-fraudulent the claim, unmatch, or resolve.
-- **`AdminMessagesPage.jsx`** — Admin-side conversation hub. Same WhatsApp polish as the student side: typing, day separators, unread badges, animations. Deep-link via `?reportId=42`.
+- **`AdminOverview.jsx`** — Browse all student lost reports with status filter and ticket-aware search. Each row that the admin hasn't opened yet shows a red **"NEW"** badge next to its ticket. New submissions appear live via Socket.io without a page refresh. Open a report in `ModalOverview` to: view the **Hawk AI Claim panel** (structured ownership fields), match the report to a found item, approve / reject / reject-as-fraudulent the claim, unmatch, or resolve. Opening a report clears its "NEW" badge and decrements the sidebar's Overview counter.
+- **`AdminMessagesPage.jsx`** — Admin-side conversation hub. Same WhatsApp polish as the student side: typing (purple bubble to match the student-side style), day separators, unread badges, animations. Deep-link via `?reportId=42`.
+
+### Global / cross-cutting UI
+- **`DisclaimerModal.jsx`** — Renders on first visit (`localStorage`-persisted). Tells the visitor this is a student capstone project, not affiliated with or endorsed by Hunter College / CUNY. Dismissed with "I Understand"; never shown again on that device.
+- **Auth forms (`LoginPage.jsx`, `RegisterPage.jsx`)** — Both have eye-icon **show/hide password** toggles. The Register page enforces and live-validates a strong-password policy (≥8 chars, ≥1 uppercase, ≥1 digit, ≥1 special character) with a per-rule check/cross checklist, plus a "passwords match" indicator on the confirm field.
+- **Sidebars (`StudentSidebar.jsx`, `AdminSidebar.jsx`)** — Collapsible hamburger sidebars on mobile, sticky on desktop. Sidebar links carry live count badges:
+  - Student: Messages badge = total unread messages across all reports.
+  - Admin: Messages badge = total unread messages; Overview badge = number of unread/never-opened lost reports (persisted across sessions via `viewed_by_admin`).
 
 ### Public pages
 `HomePage`, `AboutPage`, `ContactPage`, `PrivacyPage` — unauthenticated marketing and info.
@@ -97,7 +105,7 @@ All routes under `/api/*`, Express server at `lost-and-found/server/`.
 | Prefix | File | Endpoints |
 |---|---|---|
 | `/api/auth` | `routes/auth.js` | `POST /register`, `POST /login`, `GET /me` |
-| `/api/reports` | `routes/reports.js` | `GET /`, `POST /` (generates `ticket_number` + emits `report:new`), `GET /:id`, `PATCH /:id/match`, `PATCH /:id/unmatch`, `PATCH /:id/resolve` |
+| `/api/reports` | `routes/reports.js` | `GET /`, `POST /` (generates `ticket_number` + emits `report:new`), `GET /unviewed-count` (admin: number of reports never opened), `GET /:id`, `PATCH /:id/match`, `PATCH /:id/unmatch`, `PATCH /:id/viewed` (admin: idempotent mark-as-seen), `PATCH /:id/resolve` |
 | `/api/found-items` | `routes/foundItems.js` | `GET /`, `POST /` (multipart), `GET /:id`, `DELETE /:id` |
 | `/api/messages` | `routes/messages.js` | `GET /` (conversation summaries, includes `ticket_number`), `GET /:reportId`, `POST /:reportId` (emits `message:new`) |
 | `/api/chat` | `routes/chat.js` | `POST /` (Hawk AI; rate-limited per user) |
@@ -106,6 +114,7 @@ All routes under `/api/*`, Express server at `lost-and-found/server/`.
 ### Auth middleware
 - `requireAuth` — verifies `Authorization: Bearer <JWT>`, attaches `req.user = { id, email, role }`.
 - `requireAdmin` — runs `requireAuth`, then 403s if `role !== 'admin'`.
+- **Socket auth re-fetches `role` from the DB** at handshake (not just from the JWT) so a freshly-promoted admin sees realtime notifications without re-issuing a token.
 
 ### Chat-specific middleware
 - `chatLimit.checkChatLimit` — checks `profiles.chat_locked_until`, enforces **30 messages/day** and **10 tool-calls/day** per user.
@@ -136,7 +145,11 @@ lost_reports
   student_id → profiles, item_name, category, location_lost, date_lost,
   description, image_url,
   status ∈ {Pending, Matched, Resolved},
-  matched_item_id → found_items (nullable), created_at
+  matched_item_id → found_items (nullable),
+  viewed_by_admin (BOOLEAN NOT NULL DEFAULT false — flips to true the first
+                   time an admin opens the report; drives the persistent
+                   "NEW" badge on AdminOverview),
+  created_at
 
 found_items
   id, item_name, category, location_found, date_found, description,
@@ -183,7 +196,9 @@ The threat the design takes seriously: **a malicious user creates a real Hunter 
 
 **Authentication & authorization**
 - bcrypt-hashed passwords (cost 10), 7-day JWTs, role-checked on every protected route.
-- Socket.io validates JWT at handshake.
+- Client-side registration enforces strong passwords: ≥8 characters, ≥1 uppercase, ≥1 digit, ≥1 special character (with a live checklist UI on the form).
+- Show/hide password toggles on login and register so users can visually verify what they typed before submitting.
+- Socket.io validates JWT at handshake, then re-fetches the user's `role` from the DB so role changes take effect on the next reconnect.
 - Admin role required for all match/resolve/approve/reject endpoints.
 
 **Data minimization in the AI surface**
@@ -260,9 +275,9 @@ A determined attacker could still binary-search by varying descriptions to learn
 9. Student logs off; admin still asleep.
 
 ### Journey B — Admin arrives in the morning
-1. Admin logs in. The Admin sidebar shows a `1` badge on Overview (the new report).
-2. Admin clicks Overview → badge clears → finds the new report in the table by ticket.
-3. Admin opens ModalOverview → sees:
+1. Admin logs in. The Admin sidebar shows a `1` badge on Overview (the new report). This count comes from `GET /reports/unviewed-count` and persists across sessions — so even if the admin had logged out the night before, the badge is still there.
+2. Admin clicks Overview → the new report appears in the table with a red **"NEW"** tag next to its ticket. The table is also live: if a *second* student submits a report while the admin is looking at this screen, the row appears without a refresh.
+3. Admin opens ModalOverview → the server flips `viewed_by_admin=true` for that row, the "NEW" tag disappears on that row, and the sidebar badge counter ticks down by one. The admin sees:
    - The lost report details + ticket
    - The Hawk AI Claim panel with the student's structured answers
    - A scrollable list of unclaimed found items
@@ -349,14 +364,22 @@ Every turn writes a row to `chat_logs`: user messages, assistant messages, tool 
 - ✅ Click-to-expand item detail modal on AdminDashboard.
 - ✅ Drag-and-drop photo upload.
 - ✅ Sticky sidebars that don't disappear on scroll.
+- ✅ **Persistent "NEW" badge on lost reports** — `lost_reports.viewed_by_admin` column, `PATCH /reports/:id/viewed`, `GET /reports/unviewed-count`. The Admin Overview sidebar badge survives logout / new sessions and decrements as the admin opens each new report.
+- ✅ **Live Admin Overview** — the table refreshes the moment a student submits a new lost report (via the `report:new` socket event), no manual refresh needed.
+- ✅ **Admin-side typing indicator** styled to match the student side (purple bubble).
+- ✅ **Socket auth bug fix** — the socket handshake now reads `role` from the DB so admins promoted after they last logged in immediately get realtime notifications.
+- ✅ **Auth-form UX** — show/hide password toggle on login and register; strong-password live checklist (length, uppercase, digit, special) and password-match indicator on register.
+- ✅ **Capstone disclaimer modal** on first visit (localStorage-acknowledged), making it clear the app is not affiliated with Hunter College / CUNY.
+- ✅ **Mobile UI audit** — admin dashboard overflow, modal layout, home button overlap, auth footer, sidebar hamburger menu; messages page swaps list ↔ thread on small screens.
 
 ### Still open
 1. **Email or push notifications** for state changes (currently only in-app via Socket.io).
-2. **Persisted unread state** — currently in-memory only; if the user closes the tab and reopens, the per-conversation unread counters reset to whatever's still arriving via socket. Could query DB for messages since last visit.
-3. **Auto-matching** by AI — Hard problem with weak defenses; admin matching takes seconds. Probably not worth the complexity.
+2. **Persisted per-conversation unread counts for messages** — the "NEW report" counter is now persisted on the server, but per-message unread badges are still in-memory only. If a user closes the tab and reopens, the per-conversation unread counters reset to whatever arrives via socket from that point on. Could query DB for messages since last visit.
+3. **Auto-matching** by AI — hard problem with weak defenses; admin matching takes seconds. Probably not worth the complexity.
 4. **Mobile push notifications** when the tab is closed.
 5. **Found item ticketing** (`FI-XXXXXX`) — only admins see found items, so it's lower priority.
 6. **Read receipts** on messages — not implemented; deliberately skipped as overkill for L&F.
+7. **Password reset / forgot-password flow** — login page has a "Forgot your password?" hint, but no backend flow yet.
 
 ---
 
@@ -373,11 +396,14 @@ capstone-project/
 └── lost-and-found/
     ├── client/                # React + Vite SPA
     │   └── src/
+    │       ├── App.jsx        # wraps AppRoutes with the first-visit DisclaimerModal
     │       ├── pages/{admin,student,auth,public}/
     │       ├── components/    # AdminSidebar, StudentSidebar,
     │       │                  # ModalOverview (with Hawk AI Claim panel),
-    │       │                  # ItemCell, DisclaimerModal
+    │       │                  # ItemCell, DisclaimerModal, PublicPageFrame
     │       ├── context/       # AuthContext, NotificationContext
+    │       │                  # (NotificationContext tracks unread messages
+    │       │                  # in-memory + persistent admin "new report" count)
     │       ├── lib/           # api.js, socket.js
     │       ├── routes/        # AppRoutes.jsx with ProtectedRoute
     │       └── styles/        # global.css (incl. .ticket-tag)
