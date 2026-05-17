@@ -26,6 +26,9 @@ export function NotificationProvider({ children }) {
       delete next[reportId];
       return next;
     });
+    // Persist server-side so the read state survives tab close + reopen.
+    // Fire-and-forget — local clearing already happened optimistically.
+    api.post(`/messages/${reportId}/read`, {}).catch(() => {});
   }, []);
 
   // Decrement the unviewed-reports count by one. Caller is responsible for
@@ -39,6 +42,16 @@ export function NotificationProvider({ children }) {
     if (!user || user.role !== "admin") return;
     api.get("/reports/unviewed-count")
       .then((data) => setPendingReports(data?.count ?? 0))
+      .catch(console.error);
+  }, [user]);
+
+  // Both roles: fetch persistent per-conversation unread counts on login /
+  // session restore. Without this, badges only reflect socket events since
+  // the page loaded — anything missed while logged out wouldn't show.
+  useEffect(() => {
+    if (!user) return;
+    api.get("/messages/unread-counts")
+      .then((data) => setUnreadByReport(data || {}))
       .catch(console.error);
   }, [user]);
 

@@ -44,6 +44,66 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/messages/unread-counts — { reportId: count } for the current user.
+// Per-conversation unread = messages newer than the user's last-read timestamp
+// for that report, excluding messages the user sent themselves.
+// MUST be defined BEFORE /:reportId so Express doesn't capture it as a param.
+router.get('/unread-counts', requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const isAdmin = req.user.role === 'admin';
+  const readColumn = isAdmin ? 'admin_last_read_at' : 'student_last_read_at';
+
+  try {
+    const baseSql = `
+      SELECT m.report_id, COUNT(*)::INT AS unread
+        FROM messages m
+        JOIN lost_reports lr ON m.report_id = lr.id
+       WHERE m.sender_id <> $1
+         AND (lr.${readColumn} IS NULL OR m.created_at > lr.${readColumn})
+    `;
+
+    const { rows } = isAdmin
+      ? await pool.query(baseSql + ' GROUP BY m.report_id', [userId])
+      : await pool.query(baseSql + ' AND lr.student_id = $1 GROUP BY m.report_id', [userId]);
+
+    const result = {};
+    for (const r of rows) result[r.report_id] = r.unread;
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /api/messages/:reportId/read — mark the conversation as read for the current user
+router.post('/:reportId/read', requireAuth, async (req, res) => {
+  const reportId = Number(req.params.reportId);
+  if (!Number.isInteger(reportId)) return res.status(400).json({ error: 'Invalid report id' });
+
+  try {
+    if (req.user.role !== 'admin') {
+      const owner = await pool.query(
+        'SELECT student_id FROM lost_reports WHERE id = $1',
+        [reportId]
+      );
+      if (owner.rows.length === 0) return res.status(404).json({ error: 'Report not found' });
+      if (owner.rows[0].student_id !== req.user.id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    const column = req.user.role === 'admin' ? 'admin_last_read_at' : 'student_last_read_at';
+    await pool.query(
+      `UPDATE lost_reports SET ${column} = NOW() WHERE id = $1`,
+      [reportId]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /api/messages/:reportId — get all messages for a report
 router.get('/:reportId', requireAuth, async (req, res) => {
   try {

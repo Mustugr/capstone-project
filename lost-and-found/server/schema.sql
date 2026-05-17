@@ -25,19 +25,21 @@ CREATE TABLE IF NOT EXISTS found_items (
 );
 
 CREATE TABLE IF NOT EXISTS lost_reports (
-  id               SERIAL PRIMARY KEY,
-  ticket_number    VARCHAR(20) UNIQUE NOT NULL,
-  student_id       INTEGER REFERENCES profiles(id) ON DELETE CASCADE,
-  item_name        VARCHAR(100) NOT NULL,
-  category         VARCHAR(50),
-  location_lost    VARCHAR(150),
-  date_lost        DATE,
-  description      TEXT,
-  image_url        TEXT,
-  status           VARCHAR(20) DEFAULT 'Pending' CHECK (status IN ('Pending', 'Matched', 'Resolved')),
-  matched_item_id  INTEGER REFERENCES found_items(id),
-  viewed_by_admin  BOOLEAN NOT NULL DEFAULT false,
-  created_at       TIMESTAMP DEFAULT NOW()
+  id                    SERIAL PRIMARY KEY,
+  ticket_number         VARCHAR(20) UNIQUE NOT NULL,
+  student_id            INTEGER REFERENCES profiles(id) ON DELETE CASCADE,
+  item_name             VARCHAR(100) NOT NULL,
+  category              VARCHAR(50),
+  location_lost         VARCHAR(150),
+  date_lost             DATE,
+  description           TEXT,
+  image_url             TEXT,
+  status                VARCHAR(20) DEFAULT 'Pending' CHECK (status IN ('Pending', 'Matched', 'Resolved')),
+  matched_item_id       INTEGER REFERENCES found_items(id),
+  viewed_by_admin       BOOLEAN NOT NULL DEFAULT false,
+  student_last_read_at  TIMESTAMP,
+  admin_last_read_at    TIMESTAMP,
+  created_at            TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS messages (

@@ -107,7 +107,7 @@ All routes under `/api/*`, Express server at `lost-and-found/server/`.
 | `/api/auth` | `routes/auth.js` | `POST /register`, `POST /login`, `GET /me` |
 | `/api/reports` | `routes/reports.js` | `GET /`, `POST /` (generates `ticket_number` + emits `report:new`), `GET /unviewed-count` (admin: number of reports never opened), `GET /:id`, `PATCH /:id/match`, `PATCH /:id/unmatch`, `PATCH /:id/viewed` (admin: idempotent mark-as-seen), `PATCH /:id/resolve` |
 | `/api/found-items` | `routes/foundItems.js` | `GET /`, `POST /` (multipart), `GET /:id`, `DELETE /:id` |
-| `/api/messages` | `routes/messages.js` | `GET /` (conversation summaries, includes `ticket_number`), `GET /:reportId`, `POST /:reportId` (emits `message:new`) |
+| `/api/messages` | `routes/messages.js` | `GET /` (conversation summaries, includes `ticket_number`), `GET /unread-counts` (per-conversation unread counts for the current user), `GET /:reportId`, `POST /:reportId` (emits `message:new`), `POST /:reportId/read` (updates the role's `*_last_read_at` to `NOW()` so unread badges survive tab close) |
 | `/api/chat` | `routes/chat.js` | `POST /` (Hawk AI; rate-limited per user) |
 | `/api/claims` | `routes/claims.js` | `GET /`, `GET /report/:reportId`, `PATCH /:id/approve` (auto-posts ticketed approval message), `PATCH /:id/reject` (optional `is_fraudulent` → 14-day chat lockout) |
 
@@ -149,6 +149,11 @@ lost_reports
   viewed_by_admin (BOOLEAN NOT NULL DEFAULT false — flips to true the first
                    time an admin opens the report; drives the persistent
                    "NEW" badge on AdminOverview),
+  student_last_read_at (TIMESTAMP, nullable — last time this student opened
+                        the report's chat thread; drives persistent unread
+                        badges across sessions),
+  admin_last_read_at   (TIMESTAMP, nullable — same idea for the admin side,
+                        shared across all admins),
   created_at
 
 found_items
@@ -240,7 +245,7 @@ A determined attacker could still binary-search by varying descriptions to learn
 - Plain CSS modules per page (no Tailwind / UI framework)
 - `lib/api.js` — fetch wrapper with auto bearer-token
 - `context/AuthContext.jsx` — session, login/register/logout
-- `context/NotificationContext.jsx` — **global** per-conversation unread tracking + admin "new report" badge, fed by Socket.io
+- `context/NotificationContext.jsx` — **global** per-conversation unread tracking (seeded from `GET /messages/unread-counts` on login, kept fresh via Socket.io, persisted server-side on read) + admin "new report" badge
 
 ### Server (`lost-and-found/server/`)
 - **Node.js** + **Express 4**
@@ -371,15 +376,15 @@ Every turn writes a row to `chat_logs`: user messages, assistant messages, tool 
 - ✅ **Auth-form UX** — show/hide password toggle on login and register; strong-password live checklist (length, uppercase, digit, special) and password-match indicator on register.
 - ✅ **Capstone disclaimer modal** on first visit (localStorage-acknowledged), making it clear the app is not affiliated with Hunter College / CUNY.
 - ✅ **Mobile UI audit** — admin dashboard overflow, modal layout, home button overlap, auth footer, sidebar hamburger menu; messages page swaps list ↔ thread on small screens.
+- ✅ **Persistent per-conversation unread counts for messages** — `lost_reports.student_last_read_at` and `admin_last_read_at` columns + `GET /messages/unread-counts` (seeds the context on login) + `POST /messages/:reportId/read` (called by `markReportRead`). Badges now survive tab close + reopen and reflect anything that arrived while logged out.
 
 ### Still open
 1. **Email or push notifications** for state changes (currently only in-app via Socket.io).
-2. **Persisted per-conversation unread counts for messages** — the "NEW report" counter is now persisted on the server, but per-message unread badges are still in-memory only. If a user closes the tab and reopens, the per-conversation unread counters reset to whatever arrives via socket from that point on. Could query DB for messages since last visit.
-3. **Auto-matching** by AI — hard problem with weak defenses; admin matching takes seconds. Probably not worth the complexity.
-4. **Mobile push notifications** when the tab is closed.
-5. **Found item ticketing** (`FI-XXXXXX`) — only admins see found items, so it's lower priority.
-6. **Read receipts** on messages — not implemented; deliberately skipped as overkill for L&F.
-7. **Password reset / forgot-password flow** — login page has a "Forgot your password?" hint, but no backend flow yet.
+2. **Auto-matching** by AI — hard problem with weak defenses; admin matching takes seconds. Probably not worth the complexity.
+3. **Mobile push notifications** when the tab is closed.
+4. **Found item ticketing** (`FI-XXXXXX`) — only admins see found items, so it's lower priority.
+5. **Read receipts** on messages — not implemented; deliberately skipped as overkill for L&F.
+6. **Password reset / forgot-password flow** — login page has a "Forgot your password?" hint, but no backend flow yet.
 
 ---
 
@@ -402,8 +407,9 @@ capstone-project/
     │       │                  # ModalOverview (with Hawk AI Claim panel),
     │       │                  # ItemCell, DisclaimerModal, PublicPageFrame
     │       ├── context/       # AuthContext, NotificationContext
-    │       │                  # (NotificationContext tracks unread messages
-    │       │                  # in-memory + persistent admin "new report" count)
+    │       │                  # (NotificationContext seeds unread counts from
+    │       │                  # /messages/unread-counts on login and persists
+    │       │                  # reads via POST /messages/:reportId/read)
     │       ├── lib/           # api.js, socket.js
     │       ├── routes/        # AppRoutes.jsx with ProtectedRoute
     │       └── styles/        # global.css (incl. .ticket-tag)
