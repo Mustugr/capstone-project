@@ -78,8 +78,8 @@ export default function StudentReportsPage() {
                     <th>Category</th>
                     <th>Date Submitted</th>
                     <th>Status</th>
-                    <th>Details</th>
                     <th>Chat</th>
+                    <th>Details</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -91,15 +91,15 @@ export default function StudentReportsPage() {
                         <td data-label="Category">{report.category || "—"}</td>
                         <td data-label="Date">{formatDate(report.created_at)}</td>
                         <td data-label="Status"><span className={statusClass(report.status)}>{report.status}</span></td>
+                        <td data-label="Chat">
+                          <Link to={`/student-messages?reportId=${report.id}`} className="student-lift-btn student-lift-btn--ghost">
+                            <span className="student-lift-btn__face">Chat</span>
+                          </Link>
+                        </td>
                         <td data-label="Details">
                           <button className="student-lift-btn" onClick={() => setSelected(report)}>
                             <span className="student-lift-btn__face">View</span>
                           </button>
-                        </td>
-                        <td data-label="Chat">
-                          <Link to={`/student-messages?reportId=${report.id}`} className="student-lift-btn">
-                            <span className="student-lift-btn__face">Chat</span>
-                          </Link>
                         </td>
                       </tr>
                     ))
