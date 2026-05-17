@@ -58,7 +58,7 @@ const TOOLS = [
         },
         category: {
           type: 'string',
-          description: "Optional category filter. Common categories: 'Backpack / Bag', 'Electronics', 'Clothing', 'Keys', 'Wallet / ID', 'Bottle / Drinkware', 'Books', 'Other'.",
+          description: "Optional category filter. Must EXACTLY match one of the form categories: 'Electronic', 'Clothing', 'Books', 'Backpack / Bag', 'Wallet / Purse', 'Keys', 'ID Card', 'Water Bottle'. (Singular 'Electronic' not 'Electronics'; 'Water Bottle' not 'Bottle / Drinkware'; 'Wallet / Purse' and 'ID Card' are separate categories.)",
         },
       },
       required: ['keywords'],

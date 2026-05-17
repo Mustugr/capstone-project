@@ -3,7 +3,7 @@ const multer  = require('multer');
 const path    = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const pool    = require('../db');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -25,8 +25,9 @@ const upload = multer({
   },
 });
 
-// GET /api/found-items — everyone can browse found items
-router.get('/', requireAuth, async (req, res) => {
+// GET /api/found-items — admin only. Students must never see the inventory
+// (see PURPOSE.md §4 "Students never see found items").
+router.get('/', requireAdmin, async (req, res) => {
   try {
     const { category, status } = req.query;
     let query = 'SELECT * FROM found_items WHERE 1=1';
@@ -95,8 +96,8 @@ router.post('/', requireAdmin, upload.single('image'), async (req, res) => {
   }
 });
 
-// GET /api/found-items/:id
-router.get('/:id', requireAuth, async (req, res) => {
+// GET /api/found-items/:id — admin only (same reason as the list endpoint).
+router.get('/:id', requireAdmin, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM found_items WHERE id = $1', [req.params.id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Item not found' });

@@ -110,7 +110,7 @@ All routes under `/api/*`, Express server at `lost-and-found/server/`.
 | `/api/found-items` | `routes/foundItems.js` | `GET /`, `POST /` (multipart), `GET /:id`, `DELETE /:id` |
 | `/api/messages` | `routes/messages.js` | `GET /` (conversation summaries, includes `ticket_number`), `GET /unread-counts` (per-conversation unread counts for the current user), `GET /:reportId`, `POST /:reportId` (emits `message:new`), `POST /:reportId/read` (updates the role's `*_last_read_at` to `NOW()` so unread badges survive tab close) |
 | `/api/chat` | `routes/chat.js` | `POST /` (Hawk AI; rate-limited per user) |
-| `/api/claims` | `routes/claims.js` | `GET /`, `GET /report/:reportId`, `PATCH /:id/approve` (auto-posts ticketed approval message), `PATCH /:id/reject` (optional `is_fraudulent` → 14-day chat lockout) |
+| `/api/claims` | `routes/claims.js` | `GET /`, `GET /report/:reportId`, `PATCH /:id/approve` (auto-posts ticketed approval message), `PATCH /:id/reject` (auto-posts a rejection message; optional `is_fraudulent` swaps in a fraud-flag message and sets a 14-day chat lockout) |
 
 ### Auth middleware
 - `requireAuth` — verifies `Authorization: Bearer <JWT>`, attaches `req.user = { id, email, role }`.
@@ -185,13 +185,22 @@ claims
 ```
 
 ### Key invariants
-- A `lost_report` with `status='Matched'` has exactly one `matched_item_id`; the linked `found_item` has `status='Matched'`.
+
+**DB-enforced** (CHECK / UNIQUE / FK constraints in `schema.sql`):
+- `profiles.role IN ('student', 'admin')`; `email` is `UNIQUE`.
+- `lost_reports.ticket_number` is `UNIQUE NOT NULL`; `status IN ('Pending', 'Matched', 'Resolved')`.
+- `found_items.status IN ('Unclaimed', 'Matched', 'Returned')`.
+- `claims.status IN ('Pending Review', 'Approved', 'Rejected')`.
+- `messages.sender_role IN ('student', 'admin')`.
+- Ticket numbers use a confusion-free alphabet (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789` — no `I/O/0/1`).
+
+**Application-enforced** (logic in routes — bypassable by direct SQL):
+- A `lost_report` with `status='Matched'` has exactly one `matched_item_id`; the linked `found_item` has `status='Matched'`. Held together by the transaction in `PATCH /reports/:id/match`.
 - A `lost_report` with `status='Resolved'` has a linked `found_item` with `status='Returned'`.
-- A `claims.status='Approved'` triggers an auto-message in the report's `messages` thread referencing the ticket.
+- A `claims.status='Approved'` or `'Rejected'` transition triggers an auto-message in the report's `messages` thread referencing the ticket (`routes/claims.js`). Fraudulent rejection swaps in a fraud-flag message.
 - A `claims.status='Rejected'` with `is_fraudulent=true` sets `profiles.chat_locked_until = NOW() + 14 days` for the student.
-- One student can only have one `claims.status='Pending Review'` row at a time (enforced in submit_claim).
-- After a rejected claim, the student is in a 24-hour cooldown before they can submit another.
-- Ticket numbers use a confusion-free alphabet (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789` — no `I/O/0/1`) and are unique-constrained at the DB level.
+- One student can only have one `claims.status='Pending Review'` row at a time (enforced in `submit_claim`, not by a DB constraint).
+- After a rejected claim, the student is in a 24-hour cooldown before `submit_claim` will accept a new one.
 
 ---
 
@@ -235,6 +244,11 @@ Best-effort hardened. The system prompt explicitly instructs the model to ignore
 
 ### Threat: enumeration via repeated probing
 A determined attacker could still binary-search by varying descriptions to learn which keywords flip `match_found` to true. The mitigations are: low daily tool-call cap, audit log review, claim-form commitment (probing alone doesn't grant any item — they have to file a written, identity-attached claim that an admin reviews), and fraud-strike lockouts.
+
+### Known gaps (tracked in ROADMAP)
+These are places where the current code does not yet match the security model described above. They are listed here for honesty, and tracked as open work in [ROADMAP.md](./ROADMAP.md):
+
+_(Previously listed gaps in this section have been closed and moved to §12 "Done since first PURPOSE.md".)_
 
 ---
 
@@ -380,12 +394,13 @@ Every turn writes a row to `chat_logs`: user messages, assistant messages, tool 
 - ✅ **Mobile UI audit** — admin dashboard overflow, modal layout, home button overlap, auth footer, sidebar hamburger menu; messages page swaps list ↔ thread on small screens.
 - ✅ **Persistent per-conversation unread counts for messages** — `lost_reports.student_last_read_at` and `admin_last_read_at` columns + `GET /messages/unread-counts` (seeds the context on login) + `POST /messages/:reportId/read` (called by `markReportRead`). Badges now survive tab close + reopen and reflect anything that arrived while logged out.
 - ✅ **Read receipts (✓ / ✓✓)** — reuses the same `*_last_read_at` columns. `GET /messages/:reportId` annotates each row with `read_by_other`; `POST /messages/:reportId/read` emits a `read:update` socket event so the sender's UI flips ✓ to ✓✓ live.
+- ✅ **`GET /api/found-items` restricted to admins.** Both the list (`GET /`) and detail (`GET /:id`) endpoints in `server/routes/foundItems.js` now use `requireAdmin` instead of `requireAuth`. A student with their own JWT can no longer pull the inventory, storage locations, or descriptions via direct API calls. Closes the most urgent gap in the §4 "Students never see found items" principle.
+- ✅ **Category vocabulary aligned.** The Hawk AI `search_found_items` tool description in `server/routes/chat.js` now lists the exact same eight categories used by `StudentLostItemForm.jsx`, `AdminAddItemPage.jsx`, and the `AdminDashboard.jsx` filter (`'Electronic'`, `'Clothing'`, `'Books'`, `'Backpack / Bag'`, `'Wallet / Purse'`, `'Keys'`, `'ID Card'`, `'Water Bottle'`), with explicit callouts for the prior mismatches. The optional `category` filter now matches actual DB rows.
+- ✅ **HTTP `requireAdmin` / `requireAuth` re-fetch role from the DB.** `server/middleware/auth.js` now uses the JWT only for identity (signature + `id`), then runs `SELECT id, email, role FROM profiles WHERE id = $1` and rejects if the user no longer exists. Matches the existing socket handshake pattern (`server/index.js:67-78`). A demoted or deleted admin loses HTTP admin access immediately, not after their 7-day token expires.
 
 ### Still open
-1. **Email or push notifications** for state changes (currently only in-app via Socket.io).
-2. **Auto-matching** by AI — hard problem with weak defenses; admin matching takes seconds. Probably not worth the complexity.
-3. **Mobile push notifications** when the tab is closed.
-4. **Password reset / forgot-password flow** — login page has a "Forgot your password?" hint, but no backend flow yet.
+1. **Email notifications for state changes** — claim approved/rejected, new message, match found. Currently in-app only via Socket.io. **Deferred**: if CUNY adopts the app, institutional email infrastructure (and the CUNYfirst-linked address) likely supplies this; not worth building our own SMTP/Resend integration until we know what they provide.
+2. **Password reset / forgot-password flow** — login page has a "Forgot your password?" hint, but no backend flow yet. **Deferred**: post-CUNYfirst SSO, the email/password flow goes away entirely and password reset is handled by CUNY's identity provider. Not worth building a reset flow we'll throw out.
 
 ---
 
