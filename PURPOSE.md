@@ -78,6 +78,7 @@ There is no public/anonymous view of the lost-and-found inventory. Found items a
   - Day separators ("Today", "Yesterday", "May 12, 2026")
   - Per-conversation unread badges in the sidebar list
   - Slide-in animation on new bubbles
+  - ✓ / ✓✓ read receipts on own messages (✓✓ turns primary-colored once the admin has opened the conversation past that message)
   - On mobile, the conversation list and the open thread swap (back arrow returns to list)
 
 ### Admin-facing pages
@@ -126,6 +127,7 @@ All routes under `/api/*`, Express server at `lost-and-found/server/`.
   - `message:new` when anyone sends a chat message
   - `report:new` to the `admin` room when a student submits a lost report
   - `typing:start` / `typing:stop` relayed between the conversation's student and admin
+  - `read:update` when someone opens a conversation, so the other side's UI can flip ✓ to ✓✓ live
 
 ### Atomic state transitions
 `/match`, `/unmatch`, `/resolve`, `/claims/:id/approve`, `/claims/:id/reject` all wrap their multi-table updates in a transaction so two related rows can't go out of sync.
@@ -377,14 +379,13 @@ Every turn writes a row to `chat_logs`: user messages, assistant messages, tool 
 - ✅ **Capstone disclaimer modal** on first visit (localStorage-acknowledged), making it clear the app is not affiliated with Hunter College / CUNY.
 - ✅ **Mobile UI audit** — admin dashboard overflow, modal layout, home button overlap, auth footer, sidebar hamburger menu; messages page swaps list ↔ thread on small screens.
 - ✅ **Persistent per-conversation unread counts for messages** — `lost_reports.student_last_read_at` and `admin_last_read_at` columns + `GET /messages/unread-counts` (seeds the context on login) + `POST /messages/:reportId/read` (called by `markReportRead`). Badges now survive tab close + reopen and reflect anything that arrived while logged out.
+- ✅ **Read receipts (✓ / ✓✓)** — reuses the same `*_last_read_at` columns. `GET /messages/:reportId` annotates each row with `read_by_other`; `POST /messages/:reportId/read` emits a `read:update` socket event so the sender's UI flips ✓ to ✓✓ live.
 
 ### Still open
 1. **Email or push notifications** for state changes (currently only in-app via Socket.io).
 2. **Auto-matching** by AI — hard problem with weak defenses; admin matching takes seconds. Probably not worth the complexity.
 3. **Mobile push notifications** when the tab is closed.
-4. **Found item ticketing** (`FI-XXXXXX`) — only admins see found items, so it's lower priority.
-5. **Read receipts** on messages — not implemented; deliberately skipped as overkill for L&F.
-6. **Password reset / forgot-password flow** — login page has a "Forgot your password?" hint, but no backend flow yet.
+4. **Password reset / forgot-password flow** — login page has a "Forgot your password?" hint, but no backend flow yet.
 
 ---
 

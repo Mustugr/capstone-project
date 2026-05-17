@@ -99,15 +99,29 @@ export default function AdminMessagesPage() {
       }
     };
 
+    const onReadUpdate = ({ report_id, role_that_read, read_at }) => {
+      if (report_id !== selectedId) return;
+      if (role_that_read === user?.role) return;
+      const readMs = new Date(read_at).getTime();
+      setMessages((prev) => prev.map((m) => {
+        if (m.sender_role !== user?.role) return m;
+        if (m.read_by_other) return m;
+        const created = new Date(m.created_at).getTime();
+        return created <= readMs ? { ...m, read_by_other: true } : m;
+      }));
+    };
+
     sock.on("message:new",   onNewMessage);
     sock.on("typing:start",  onTypingStart);
     sock.on("typing:stop",   onTypingStop);
+    sock.on("read:update",   onReadUpdate);
     return () => {
       sock.off("message:new",   onNewMessage);
       sock.off("typing:start",  onTypingStart);
       sock.off("typing:stop",   onTypingStop);
+      sock.off("read:update",   onReadUpdate);
     };
-  }, [selectedId, user?.id]);
+  }, [selectedId, user?.id, user?.role]);
 
   const selectConversation = (id) => {
     setSelectedId(id);
@@ -253,7 +267,18 @@ export default function AdminMessagesPage() {
                             <div className={`admin-messages__bubble${isAdmin ? " user" : " admin"}`}>
                               {msg.content}
                             </div>
-                            <div className="admin-messages__time">{formatTime(msg.created_at)}</div>
+                            <div className="admin-messages__time">
+                              {formatTime(msg.created_at)}
+                              {isAdmin && (
+                                <span
+                                  className={`admin-messages__receipt${msg.read_by_other ? " read" : ""}`}
+                                  aria-label={msg.read_by_other ? "Read" : "Sent"}
+                                  title={msg.read_by_other ? "Read" : "Sent"}
+                                >
+                                  {msg.read_by_other ? "✓✓" : "✓"}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </Fragment>
                       );

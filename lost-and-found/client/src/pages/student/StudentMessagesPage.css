@@ -555,3 +555,16 @@
 .student-lift-btn:disabled .student-lift-btn__face {
   cursor: not-allowed;
 }
+
+.student-messages__receipt {
+  margin-left: 6px;
+  font-size: 13px;
+  letter-spacing: -1px;
+  color: var(--muted);
+  font-weight: 700;
+  transition: color 180ms ease;
+}
+
+.student-messages__receipt.read {
+  color: var(--primary);
+}

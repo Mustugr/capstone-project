@@ -75,48 +75,64 @@ router.get('/unread-counts', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/messages/:reportId/read — mark the conversation as read for the current user
+// POST /api/messages/:reportId/read — mark the conversation as read for the current user.
+// Also emits a read:update socket event so the sender's UI can flip ✓ → ✓✓ live.
 router.post('/:reportId/read', requireAuth, async (req, res) => {
   const reportId = Number(req.params.reportId);
   if (!Number.isInteger(reportId)) return res.status(400).json({ error: 'Invalid report id' });
 
   try {
-    if (req.user.role !== 'admin') {
-      const owner = await pool.query(
-        'SELECT student_id FROM lost_reports WHERE id = $1',
-        [reportId]
-      );
-      if (owner.rows.length === 0) return res.status(404).json({ error: 'Report not found' });
-      if (owner.rows[0].student_id !== req.user.id) {
-        return res.status(403).json({ error: 'Access denied' });
-      }
+    const reportRes = await pool.query(
+      'SELECT student_id FROM lost_reports WHERE id = $1',
+      [reportId]
+    );
+    if (reportRes.rows.length === 0) return res.status(404).json({ error: 'Report not found' });
+    const studentId = reportRes.rows[0].student_id;
+
+    if (req.user.role !== 'admin' && studentId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     const column = req.user.role === 'admin' ? 'admin_last_read_at' : 'student_last_read_at';
-    await pool.query(
-      `UPDATE lost_reports SET ${column} = NOW() WHERE id = $1`,
+    const upd = await pool.query(
+      `UPDATE lost_reports SET ${column} = NOW() WHERE id = $1 RETURNING ${column} AS read_at`,
       [reportId]
     );
-    res.json({ ok: true });
+    const readAt = upd.rows[0]?.read_at;
+
+    const io = req.app.get('io');
+    if (io) {
+      const payload = {
+        report_id: reportId,
+        role_that_read: req.user.role,
+        read_at: readAt,
+      };
+      io.to('admin').emit('read:update', payload);
+      io.to(`user:${studentId}`).emit('read:update', payload);
+    }
+
+    res.json({ ok: true, read_at: readAt });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// GET /api/messages/:reportId — get all messages for a report
+// GET /api/messages/:reportId — get all messages for a report.
+// Each row is annotated with read_by_other (boolean): true when the other
+// role's last_read_at timestamp is >= the message's created_at. Drives ✓ / ✓✓.
 router.get('/:reportId', requireAuth, async (req, res) => {
   try {
-    // Verify access: student must own the report
-    if (req.user.role !== 'admin') {
-      const report = await pool.query(
-        'SELECT student_id FROM lost_reports WHERE id = $1',
-        [req.params.reportId]
-      );
-      if (report.rows.length === 0) return res.status(404).json({ error: 'Report not found' });
-      if (report.rows[0].student_id !== req.user.id) {
-        return res.status(403).json({ error: 'Access denied' });
-      }
+    const reportRes = await pool.query(
+      `SELECT student_id, student_last_read_at, admin_last_read_at
+         FROM lost_reports WHERE id = $1`,
+      [req.params.reportId]
+    );
+    if (reportRes.rows.length === 0) return res.status(404).json({ error: 'Report not found' });
+    const { student_id, student_last_read_at, admin_last_read_at } = reportRes.rows[0];
+
+    if (req.user.role !== 'admin' && student_id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     const result = await pool.query(
@@ -127,7 +143,17 @@ router.get('/:reportId', requireAuth, async (req, res) => {
        ORDER BY m.created_at ASC`,
       [req.params.reportId]
     );
-    res.json(result.rows);
+
+    const studentReadMs = student_last_read_at ? new Date(student_last_read_at).getTime() : 0;
+    const adminReadMs   = admin_last_read_at   ? new Date(admin_last_read_at).getTime()   : 0;
+
+    const rows = result.rows.map((m) => {
+      const otherReadMs = m.sender_role === 'student' ? adminReadMs : studentReadMs;
+      const read_by_other = otherReadMs >= new Date(m.created_at).getTime();
+      return { ...m, read_by_other };
+    });
+
+    res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
