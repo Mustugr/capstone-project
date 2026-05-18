@@ -10,8 +10,8 @@ On the Admins end, they can upload lost items that they found or that were turne
 
 When Students post a request, the admin(s) would be able look through alist to see if the item is in their catalog. 
 </p>
-<p><a href='https://capstone-project-delta-six.vercel.app/'>Go to Site</a>
-</p>
+<p><a href='https://capstone-project-delta-six.vercel.app/'>Go to Site</a></p>
+<p>For full architecture, design principles, data model, security model, end-to-end user journeys, and Hawk AI internals, see <a href='./PURPOSE.md'>PURPOSE.md</a>.</p>
 
 <h2>Class Instructions</h2>
 <a href='https://github.com/rh442/Capstone-LostAndFound/blob/main/Instructions/Project%20Requirements.pdf'>Project Requirements</a>

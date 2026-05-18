@@ -245,10 +245,8 @@ Best-effort hardened. The system prompt explicitly instructs the model to ignore
 ### Threat: enumeration via repeated probing
 A determined attacker could still binary-search by varying descriptions to learn which keywords flip `match_found` to true. The mitigations are: low daily tool-call cap, audit log review, claim-form commitment (probing alone doesn't grant any item — they have to file a written, identity-attached claim that an admin reviews), and fraud-strike lockouts.
 
-### Known gaps (tracked in ROADMAP)
-These are places where the current code does not yet match the security model described above. They are listed here for honesty, and tracked as open work in [ROADMAP.md](./ROADMAP.md):
-
-_(Previously listed gaps in this section have been closed and moved to §12 "Done since first PURPOSE.md".)_
+### Known gaps
+All previously listed code-level gaps have been closed. The remaining items required before any institutional pilot are calendar-bound on CUNY (SSO/CUNYfirst, FERPA posture, accessibility audit).
 
 ---
 
@@ -369,36 +367,10 @@ Every turn writes a row to `chat_logs`: user messages, assistant messages, tool 
 
 ---
 
-## 12. Open work / next steps
+## 12. Open work
 
-### Done since first PURPOSE.md
-- ✅ Hawk AI hardened: boolean-only tool, single-search-per-conversation, prompt injection resistance.
-- ✅ `claims` table + Hawk-AI claim intake.
-- ✅ Rate limiting + audit logging.
-- ✅ Strike system (`is_fraudulent` + 14-day lockout).
-- ✅ Cooldown after rejection (24h).
-- ✅ One open claim per student.
-- ✅ Auto-message to student when admin approves/rejects.
-- ✅ Ticket numbers (`LF-XXXXXX`).
-- ✅ Real-time messaging polish: typing, day separators, per-chat badges, slide-in animation.
-- ✅ Global notification context + sidebar bubble badges.
-- ✅ Click-to-expand item detail modal on AdminDashboard.
-- ✅ Drag-and-drop photo upload.
-- ✅ Sticky sidebars that don't disappear on scroll.
-- ✅ **Persistent "NEW" badge on lost reports** — `lost_reports.viewed_by_admin` column, `PATCH /reports/:id/viewed`, `GET /reports/unviewed-count`. The Admin Overview sidebar badge survives logout / new sessions and decrements as the admin opens each new report.
-- ✅ **Live Admin Overview** — the table refreshes the moment a student submits a new lost report (via the `report:new` socket event), no manual refresh needed.
-- ✅ **Admin-side typing indicator** styled to match the student side (purple bubble).
-- ✅ **Socket auth bug fix** — the socket handshake now reads `role` from the DB so admins promoted after they last logged in immediately get realtime notifications.
-- ✅ **Auth-form UX** — show/hide password toggle on login and register; strong-password live checklist (length, uppercase, digit, special) and password-match indicator on register.
-- ✅ **Capstone disclaimer modal** on first visit (localStorage-acknowledged), making it clear the app is not affiliated with Hunter College / CUNY.
-- ✅ **Mobile UI audit** — admin dashboard overflow, modal layout, home button overlap, auth footer, sidebar hamburger menu; messages page swaps list ↔ thread on small screens.
-- ✅ **Persistent per-conversation unread counts for messages** — `lost_reports.student_last_read_at` and `admin_last_read_at` columns + `GET /messages/unread-counts` (seeds the context on login) + `POST /messages/:reportId/read` (called by `markReportRead`). Badges now survive tab close + reopen and reflect anything that arrived while logged out.
-- ✅ **Read receipts (✓ / ✓✓)** — reuses the same `*_last_read_at` columns. `GET /messages/:reportId` annotates each row with `read_by_other`; `POST /messages/:reportId/read` emits a `read:update` socket event so the sender's UI flips ✓ to ✓✓ live.
-- ✅ **`GET /api/found-items` restricted to admins.** Both the list (`GET /`) and detail (`GET /:id`) endpoints in `server/routes/foundItems.js` now use `requireAdmin` instead of `requireAuth`. A student with their own JWT can no longer pull the inventory, storage locations, or descriptions via direct API calls. Closes the most urgent gap in the §4 "Students never see found items" principle.
-- ✅ **Category vocabulary aligned.** The Hawk AI `search_found_items` tool description in `server/routes/chat.js` now lists the exact same eight categories used by `StudentLostItemForm.jsx`, `AdminAddItemPage.jsx`, and the `AdminDashboard.jsx` filter (`'Electronic'`, `'Clothing'`, `'Books'`, `'Backpack / Bag'`, `'Wallet / Purse'`, `'Keys'`, `'ID Card'`, `'Water Bottle'`), with explicit callouts for the prior mismatches. The optional `category` filter now matches actual DB rows.
-- ✅ **HTTP `requireAdmin` / `requireAuth` re-fetch role from the DB.** `server/middleware/auth.js` now uses the JWT only for identity (signature + `id`), then runs `SELECT id, email, role FROM profiles WHERE id = $1` and rejects if the user no longer exists. Matches the existing socket handshake pattern (`server/index.js:67-78`). A demoted or deleted admin loses HTTP admin access immediately, not after their 7-day token expires.
+Two items remain on the backlog, both intentionally deferred until institutional adoption is decided:
 
-### Still open
 1. **Email notifications for state changes** — claim approved/rejected, new message, match found. Currently in-app only via Socket.io. **Deferred**: if CUNY adopts the app, institutional email infrastructure (and the CUNYfirst-linked address) likely supplies this; not worth building our own SMTP/Resend integration until we know what they provide.
 2. **Password reset / forgot-password flow** — login page has a "Forgot your password?" hint, but no backend flow yet. **Deferred**: post-CUNYfirst SSO, the email/password flow goes away entirely and password reset is handled by CUNY's identity provider. Not worth building a reset flow we'll throw out.
 
