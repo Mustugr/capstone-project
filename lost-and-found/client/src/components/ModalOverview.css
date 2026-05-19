@@ -83,6 +83,18 @@
   text-align: center;
   overflow-y: auto;
   height: 100%;
+  min-height: 0;
+}
+
+/* Student-uploaded photo on the lost report — capped so the modal
+   doesn't blow out vertically on shorter / non-fullscreen desktops. */
+.report__photo {
+  width: auto;
+  max-width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+  margin-top: 12px;
+  background: #fafafa;
 }
 
 .report h2 {
