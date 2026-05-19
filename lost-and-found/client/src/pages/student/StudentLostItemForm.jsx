@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import StudentSidebar from "../../components/StudentSidebar";
 import { api } from "../../lib/api";
@@ -12,16 +12,61 @@ const CATEGORIES = [
 
 export default function StudentLostItemForm() {
   const navigate = useNavigate();
+  const fileRef  = useRef(null);
   const [formData, setFormData] = useState({
     itemName: "", category: "", locationLost: "",
     dateLost: "", description: "",
   });
-  const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [created, setCreated]   = useState(null);
+  const [imageFile, setImageFile]       = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isDragging, setIsDragging]     = useState(false);
+  const [error, setError]               = useState("");
+  const [loading, setLoading]           = useState(false);
+  const [created, setCreated]           = useState(null);
 
   const handleChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const acceptImageFile = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please upload an image file (JPG, PNG, WEBP)");
+      return;
+    }
+    setError("");
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleImageChange = (e) => acceptImageFile(e.target.files[0]);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget.contains(e.relatedTarget)) return;
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    acceptImageFile(e.dataTransfer.files?.[0]);
+  };
+
+  const resetForm = () => {
+    setCreated(null);
+    setFormData({ itemName: "", category: "", locationLost: "", dateLost: "", description: "" });
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,13 +74,15 @@ export default function StudentLostItemForm() {
     setError("");
     setLoading(true);
     try {
-      const report = await api.post("/reports", {
-        item_name:     formData.itemName,
-        category:      formData.category,
-        location_lost: formData.locationLost,
-        date_lost:     formData.dateLost || null,
-        description:   formData.description,
-      });
+      const data = new FormData();
+      data.append("item_name",     formData.itemName);
+      data.append("category",      formData.category);
+      data.append("location_lost", formData.locationLost);
+      data.append("date_lost",     formData.dateLost);
+      data.append("description",   formData.description);
+      if (imageFile) data.append("image", imageFile);
+
+      const report = await api.postForm("/reports", data);
       setCreated(report);
     } catch (err) {
       setError(err.message);
@@ -68,10 +115,7 @@ export default function StudentLostItemForm() {
                 <button type="button" className="student-lift-btn" onClick={() => navigate("/student-reports")}>
                   <span className="student-lift-btn__face">View My Reports</span>
                 </button>
-                <button type="button" className="student-lift-btn student-lift-btn--ghost" onClick={() => {
-                  setCreated(null);
-                  setFormData({ itemName: "", category: "", locationLost: "", dateLost: "", description: "" });
-                }}>
+                <button type="button" className="student-lift-btn student-lift-btn--ghost" onClick={resetForm}>
                   <span className="student-lift-btn__face">Submit Another</span>
                 </button>
               </div>
@@ -117,6 +161,38 @@ export default function StudentLostItemForm() {
               <label className="student-label">Description</label>
               <textarea name="description" value={formData.description} onChange={handleChange}
                 className="student-textarea" placeholder="Describe color, brand, size, or unique details..." />
+            </div>
+
+            <div>
+              <label className="student-label">Item Photo (optional)</label>
+              <div
+                className={`student-form-page__upload-area${isDragging ? " student-form-page__upload-area--dragging" : ""}`}
+                onClick={() => fileRef.current.click()}
+                onDragEnter={handleDragOver}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                {imagePreview ? (
+                  <img src={imagePreview} alt="preview" className="student-form-page__preview" />
+                ) : (
+                  <div className="student-form-page__upload-placeholder">
+                    <svg className="student-form-page__upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                    </svg>
+                    <span>{isDragging ? "Drop the photo here" : "Click or drag a photo here"}</span>
+                    <span className="student-form-page__upload-hint">JPG, PNG, WEBP — max 5 MB</span>
+                  </div>
+                )}
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleImageChange}
+                style={{ display: "none" }} />
+              {imageFile && (
+                <button type="button" className="student-form-page__remove-img"
+                  onClick={() => { setImageFile(null); setImagePreview(null); fileRef.current.value = ""; }}>
+                  Remove photo
+                </button>
+              )}
             </div>
 
             <button type="submit" disabled={loading} className="student-lift-btn student-lift-btn--full">

@@ -149,6 +149,13 @@ export default function ModalOverview({ isOpen, onClose, report, onMatch }) {
                   {report.description}
                 </p>
               )}
+              {report.image_url && (
+                <img
+                  src={report.image_url}
+                  alt={report.item_name}
+                  style={{ width: '100%', maxHeight: 220, objectFit: 'contain', marginTop: 12, background: '#fafafa' }}
+                />
+              )}
               <span className={statusClass(report.status)} style={{ marginTop: 12, display: 'inline-block' }}>
                 {report.status}
               </span>

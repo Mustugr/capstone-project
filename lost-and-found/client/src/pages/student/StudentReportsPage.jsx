@@ -130,6 +130,14 @@ export default function StudentReportsPage() {
                 {selected.status}
               </span>
 
+              {selected.image_url && (
+                <img
+                  src={selected.image_url}
+                  alt={selected.item_name}
+                  style={{ width: "100%", maxHeight: 260, objectFit: "contain", marginBottom: 16, background: "#fafafa" }}
+                />
+              )}
+
               <table className="sr-modal__table">
                 <tbody>
                   {[

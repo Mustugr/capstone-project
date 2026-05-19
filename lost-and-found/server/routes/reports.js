@@ -1,9 +1,30 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { generateTicket } = require('../utils/ticket');
 
 const router = express.Router();
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+const BUCKET = 'lost-items';
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|webp|gif/;
+    const ok = allowed.test(path.extname(file.originalname).toLowerCase()) &&
+               allowed.test(file.mimetype);
+    ok ? cb(null, true) : cb(new Error('Only image files are allowed'));
+  },
+});
 
 // GET /api/reports — student gets own reports; admin gets all
 router.get('/', requireAuth, async (req, res) => {
@@ -29,12 +50,34 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/reports — student submits a lost item report
-router.post('/', requireAuth, async (req, res) => {
-  const { item_name, category, location_lost, date_lost, description, image_url } = req.body;
+// POST /api/reports — student submits a lost item report (multipart, optional photo)
+router.post('/', requireAuth, upload.single('image'), async (req, res) => {
+  const { item_name, category, location_lost, date_lost, description } = req.body;
 
   if (!item_name) {
     return res.status(400).json({ error: 'Item name is required' });
+  }
+
+  let image_url = null;
+
+  if (req.file) {
+    const ext = path.extname(req.file.originalname);
+    const filename = `${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET)
+      .upload(filename, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      return res.status(500).json({ error: 'Failed to upload image' });
+    }
+
+    const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(filename);
+    image_url = urlData.publicUrl;
   }
 
   const MAX_ATTEMPTS = 5;
@@ -46,7 +89,7 @@ router.post('/', requireAuth, async (req, res) => {
            (ticket_number, student_id, item_name, category, location_lost, date_lost, description, image_url)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
-        [ticket, req.user.id, item_name, category, location_lost, date_lost, description, image_url]
+        [ticket, req.user.id, item_name, category, location_lost, date_lost || null, description, image_url]
       );
 
       const io = req.app.get('io');

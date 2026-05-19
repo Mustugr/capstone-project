@@ -70,8 +70,8 @@ There is no public/anonymous view of the lost-and-found inventory. Found items a
 
 ### Student-facing pages
 - **`StudentDashboard.jsx`** — Stats cards (Pending / Matched / Resolved) and a top-5 Recent Reports table with a "View all →" link when there are more.
-- **`StudentLostItemForm.jsx`** — Form to submit a lost item. On success, the form swaps to a confirmation panel showing the big ticket number to save.
-- **`StudentReportsPage.jsx`** — Full list of student's reports with status filter and free-text search (matches item name, category, status, **or ticket number**). Click View to open a detail modal.
+- **`StudentLostItemForm.jsx`** — Form to submit a lost item, including an optional photo upload (drag-and-drop or click, max 5 MB, stored in Supabase Storage). On success, the form swaps to a confirmation panel showing the big ticket number to save.
+- **`StudentReportsPage.jsx`** — Full list of student's reports with status filter and free-text search (matches item name, category, status, **or ticket number**). Each row has a **Chat** button that deep-links into the conversation for that report. Click View to open a detail modal that also shows the uploaded photo if one was attached.
 - **`StudentMessagesPage.jsx`** — Dual-purpose chat: a permanent "Ask Hawk AI" conversation at the top, and one conversation per lost report below.
   - Real-time message bubbles via Socket.io
   - WhatsApp-style typing indicator while the admin types
@@ -84,7 +84,7 @@ There is no public/anonymous view of the lost-and-found inventory. Found items a
 ### Admin-facing pages
 - **`AdminDashboard.jsx`** — Photo card grid of all found items, filterable by category. Click an item's image → modal with full details including description.
 - **`AdminAddItemPage.jsx`** — Add a found item: name, category, location, date, description, storage location, photo (drag-and-drop or click upload, max 5 MB, stored in Supabase Storage).
-- **`AdminOverview.jsx`** — Browse all student lost reports with status filter and ticket-aware search. Each row that the admin hasn't opened yet shows a red **"NEW"** badge next to its ticket. New submissions appear live via Socket.io without a page refresh. Open a report in `ModalOverview` to: view the **Hawk AI Claim panel** (structured ownership fields), match the report to a found item, approve / reject / reject-as-fraudulent the claim, unmatch, or resolve. Opening a report clears its "NEW" badge and decrements the sidebar's Overview counter.
+- **`AdminOverview.jsx`** — Browse all student lost reports with status filter and ticket-aware search. Each row that the admin hasn't opened yet shows a red **"NEW"** badge next to its ticket. New submissions appear live via Socket.io without a page refresh. Open a report in `ModalOverview` to: see the report details (including the student's uploaded photo if one was attached), view the **Hawk AI Claim panel** (structured ownership fields), match the report to a found item, approve / reject / reject-as-fraudulent the claim, unmatch, or resolve. Opening a report clears its "NEW" badge and decrements the sidebar's Overview counter.
 - **`AdminMessagesPage.jsx`** — Admin-side conversation hub. Same WhatsApp polish as the student side: typing (purple bubble to match the student-side style), day separators, unread badges, animations. Deep-link via `?reportId=42`.
 
 ### Global / cross-cutting UI
@@ -106,7 +106,7 @@ All routes under `/api/*`, Express server at `lost-and-found/server/`.
 | Prefix | File | Endpoints |
 |---|---|---|
 | `/api/auth` | `routes/auth.js` | `POST /register`, `POST /login`, `GET /me` |
-| `/api/reports` | `routes/reports.js` | `GET /`, `POST /` (generates `ticket_number` + emits `report:new`), `GET /unviewed-count` (admin: number of reports never opened), `GET /:id`, `PATCH /:id/match`, `PATCH /:id/unmatch`, `PATCH /:id/viewed` (admin: idempotent mark-as-seen), `PATCH /:id/resolve` |
+| `/api/reports` | `routes/reports.js` | `GET /`, `POST /` (multipart; generates `ticket_number`, uploads optional photo to the `lost-items` Supabase Storage bucket, emits `report:new`), `GET /unviewed-count` (admin: number of reports never opened), `GET /:id`, `PATCH /:id/match`, `PATCH /:id/unmatch`, `PATCH /:id/viewed` (admin: idempotent mark-as-seen), `PATCH /:id/resolve` |
 | `/api/found-items` | `routes/foundItems.js` | `GET /`, `POST /` (multipart), `GET /:id`, `DELETE /:id` |
 | `/api/messages` | `routes/messages.js` | `GET /` (conversation summaries, includes `ticket_number`), `GET /unread-counts` (per-conversation unread counts for the current user), `GET /:reportId`, `POST /:reportId` (emits `message:new`), `POST /:reportId/read` (updates the role's `*_last_read_at` to `NOW()` so unread badges survive tab close) |
 | `/api/chat` | `routes/chat.js` | `POST /` (Hawk AI; rate-limited per user) |
@@ -274,7 +274,7 @@ All previously listed code-level gaps have been closed. The remaining items requ
 
 ### Infrastructure
 - PostgreSQL 15 hosted on Supabase
-- Supabase Storage bucket `found-items` for item photos
+- Supabase Storage buckets: `found-items` for admin-uploaded item photos and `lost-items` for student-uploaded photos on lost reports
 - Client on Vercel, API on Render
 - C4 model in `docs/architecture/workspace.dsl`
 
