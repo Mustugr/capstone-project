@@ -201,6 +201,19 @@ These four items gate any deployment that touches real CUNY student data.
   - "Socket connections failing — here's where to check JWT verification logs."
 - **Estimate**: **1–2 days** for v1.
 
+#### 3.10 Finder-submitted found items (product feature)
+- **Why**: Today only admins can log a found item. The most common real-world scenario is: someone (student, faculty, staff) finds something outside office hours and has nowhere to put it. They either pocket it, drop it somewhere else, or never get it to the office — the item is lost forever even though a finder existed. Letting any logged-in user file a "I found something" report closes that gap and aligns with the app's "front door to the office, async" philosophy.
+- **What**:
+  - New "I Found Something" form available to any authenticated user.
+  - Submitted items enter `found_items` with a new status `Pending Intake`.
+  - Hawk AI's `search_found_items` tool filters out `Pending Intake` rows — it must never match an item the office doesn't physically have yet, or the student would file a claim against an item no one can retrieve.
+  - Admin gets a notification, reviews the submission, optionally messages the finder to coordinate dropoff, and once the item is physically in storage flips the status to `Unclaimed` — at which point Hawk AI starts matching it.
+- **Workflow gap to design around**: the finder holds the item between online submission and physical handoff. The `Pending Intake` status is what makes that gap safe — the rest of the system already assumes admin custody, so we must not let the AI or any student-facing surface treat a Pending Intake item as available.
+- **Schema changes**:
+  - Add `'Pending Intake'` to the `found_items.status` CHECK constraint.
+  - Add a nullable `reported_by` column on `found_items` (references `profiles.id`) so admins can see who submitted it and contact them.
+- **Estimate**: **2–4 hours** total: new form page, status flow, Hawk AI filter, admin "Mark Received" button, minor schema migration. Not a pilot blocker — explicitly post-Tuesday work.
+
 ---
 
 ## 3. Hosting & infrastructure migration
