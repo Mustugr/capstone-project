@@ -1,13 +1,18 @@
-workspace "Lost & Found Portal" "Architectural C4 model for the Hunter College Lost & Found Portal capstone — a full-stack web app that replaces the in-person lost-and-found office. Students file lost-item reports and chat with Hawk AI (an LLM-backed assistant) which acknowledges possible matches and collects structured ownership claims. Admins review the claims, verify ownership over an in-app chat, and authorize physical pickup. Students never see found-item inventory; verification is performed by humans (or deterministic server code), never by the AI." {
+workspace "Lost & Found Portal" "C4 model for the Hunter College Lost & Found Portal capstone." {
 
     model {
 
         // ────────────────────────────────────────────────────────────
         // People
         // ────────────────────────────────────────────────────────────
-        student = person "Student" "A Hunter College student who has lost an item. Files lost reports (gets a unique LF-XXXXXX ticket), chats with Hawk AI, and exchanges messages with admins about their own cases."
+        // Student: files lost reports (gets a unique LF-XXXXXX ticket),
+        // chats with Hawk AI, exchanges messages with admins on own cases.
+        student = person "Student" "Files lost reports and chats with Hawk AI."
 
-        admin = person "Administrator" "Staff member responsible for the lost-and-found inventory. Logs found items with photos, reviews Hawk AI claims, matches lost reports to recovered items, chats with students to verify ownership, and resolves cases."
+        // Administrator: staff member who logs found items with photos,
+        // reviews Hawk AI claims, matches reports to recovered items,
+        // verifies ownership in chat, and resolves cases.
+        admin = person "Administrator" "Logs found items, reviews claims, verifies in chat."
 
         // ────────────────────────────────────────────────────────────
         // External systems
@@ -35,49 +40,100 @@ workspace "Lost & Found Portal" "Architectural C4 model for the Hunter College L
         //   rejected claim, 14-day chat lockout on fraudulent claims.
         //   Every chat turn and tool call is persisted to chat_logs.
         // ────────────────────────────────────────────────────────────
-        claudeApi = softwareSystem "Anthropic Claude API" "LLM service (Claude Haiku 4.5). Sandboxed: only two server-defined tools — search_found_items (returns boolean) and submit_claim (writes to claims table). No direct DB or filesystem access; no item data ever reaches the model." "External"
+        claudeApi = softwareSystem "Anthropic Claude API" "Claude Haiku 4.5. Two sandboxed tools; no DB access." "External"
 
         // ────────────────────────────────────────────────────────────
         // The Lost & Found Portal system
+        //
+        // Front door to the lost-and-found office. Students file structured
+        // reports and chat with Hawk AI which collects ownership claims;
+        // admins verify and release in person. Students never browse
+        // inventory. Real-time messaging, typing indicators, sidebar badges,
+        // and audit logging are first-class.
         // ────────────────────────────────────────────────────────────
-        lafSystem = softwareSystem "Lost & Found Portal" "Front door to the lost-and-found office. Students file structured reports and chat with Hawk AI which collects ownership claims; admins verify and release in person. Students never browse inventory. Real-time messaging, typing indicators, sidebar badges, and audit logging are first-class." {
+        lafSystem = softwareSystem "Lost & Found Portal" "Students file reports and chat with Hawk AI; admins verify in person." {
 
-            webApp = container "Web Application" "Student and admin SPA. Hosted on Vercel. Communicates with the API over HTTPS (REST) and WebSocket (real-time). Holds session token in localStorage; AuthContext + NotificationContext track user identity and per-conversation unread counts + admin Overview badge." "React 19, Vite 7, React Router 7, socket.io-client 4"
+            // Web Application: student + admin SPA. Communicates with the API
+            // over HTTPS (REST) and WebSocket (real-time). Session token in
+            // localStorage; AuthContext + NotificationContext track identity
+            // and per-conversation unread counts + admin Overview badge.
+            webApp = container "Web Application" "Student + admin SPA on Vercel." "React 19, Vite 7, React Router 7, socket.io-client 4"
 
-            api = container "API Application" "REST + WebSocket backend. Handles auth, business logic, uploads, real-time messaging, claim review, AI orchestration, and audit logging. Hosted on Render." "Node.js, Express 4, Socket.io 4" {
+            // API Application: REST + WebSocket backend. Handles auth, business
+            // logic, uploads, real-time messaging, claim review, AI orchestration,
+            // and audit logging. Hosted on Render.
+            api = container "API Application" "REST + WebSocket backend on Render." "Node.js, Express 4, Socket.io 4" {
 
-                authComponent = component "Auth Routes" "Register, login, /me. bcrypt password hash + 7-day JWT (role embedded in token)." "Express Router"
+                // Auth Routes: register, login, /me. bcrypt password hash + 7-day
+                // JWT (role embedded in token).
+                authComponent = component "Auth Routes" "Register / login / me. JWT + bcrypt." "Express Router"
 
-                reportsComponent = component "Reports Routes" "Lost-report CRUD + match / unmatch / resolve (transactional). Generates unique LF-XXXXXX ticket numbers (confusion-free alphabet) via crypto.randomBytes; retries on UNIQUE collision. Emits report:new to admins on submission. Tracks viewed_by_admin for the Overview sidebar badge." "Express Router + utils/ticket.js"
+                // Reports Routes: lost-report CRUD + match / unmatch / resolve
+                // (transactional). Generates unique LF-XXXXXX tickets via
+                // crypto.randomBytes; retries on UNIQUE collision. Emits
+                // report:new to admins on submission. Tracks viewed_by_admin
+                // for the Overview sidebar badge.
+                reportsComponent = component "Reports Routes" "Lost-report CRUD + match / resolve. LF-XXXXXX tickets." "Express Router + utils/ticket.js"
 
-                foundItemsComponent = component "Found Items Routes" "Found-item CRUD. Uploads images to Supabase Storage; persists the public URL. Admin-only writes." "Express + multer"
+                // Found Items Routes: found-item CRUD. Uploads images to
+                // Supabase Storage; persists public URL. Admin-only writes.
+                foundItemsComponent = component "Found Items Routes" "Found-item CRUD. Image upload." "Express + multer"
 
-                messagesComponent = component "Messages Routes" "Send/list messages. Admin can chat on any report; student only on own. Emits message:new on insert. Auto-messages from claim approve/reject are inserted here." "Express Router"
+                // Messages Routes: send/list messages. Admin can chat on any
+                // report; student only on own. Emits message:new on insert.
+                // Auto-messages from claim approve/reject are inserted here.
+                messagesComponent = component "Messages Routes" "Send / list messages; emits message:new." "Express Router"
 
-                claimsComponent = component "Claims Routes" "GET claims (admin), GET claim by report. PATCH approve / reject. Approve inserts a ticketed system message. Reject as fraudulent sets profiles.chat_locked_until = NOW() + 14 days." "Express Router"
+                // Claims Routes: GET claims (admin), GET claim by report.
+                // PATCH approve / reject. Approve inserts a ticketed system
+                // message. Reject as fraudulent sets profiles.chat_locked_until
+                // = NOW() + 14 days.
+                claimsComponent = component "Claims Routes" "Approve / reject claims. Fraud → 14-day lockout." "Express Router"
 
-                chatComponent = component "Chat Routes (Hawk AI)" "POST /api/chat. Runs the Claude Haiku 4.5 tool-use loop (max 5 iterations). Implements server-side guards: one search per conversation, min keyword length, stop-word rejection, one open claim per student, 24h cooldown after rejection. Logs every turn and tool call to chat_logs." "Express + @anthropic-ai/sdk"
+                // Chat Routes (Hawk AI): POST /api/chat. Runs the Claude Haiku 4.5
+                // tool-use loop (max 5 iterations). Server-side guards: one
+                // search per conversation, min keyword length, stop-word
+                // rejection, one open claim per student, 24h cooldown after
+                // rejection. Logs every turn and tool call to chat_logs.
+                chatComponent = component "Chat Routes (Hawk AI)" "Hawk AI tool-use loop. Server-side guards." "Express + @anthropic-ai/sdk"
 
-                chatLimitMiddleware = component "Chat Rate-limit & Lockout" "Per-user daily counters (30 messages, 10 tool calls). Checks profiles.chat_locked_until and 403s if locked. In-memory counters keyed by user_id + UTC day." "Express middleware"
+                // Chat Rate-limit & Lockout: per-user daily counters (30
+                // messages, 10 tool calls). Checks profiles.chat_locked_until
+                // and 403s if locked. In-memory counters keyed by user_id +
+                // UTC day.
+                chatLimitMiddleware = component "Chat Rate-limit & Lockout" "30 msg / 10 tool per day; chat_locked_until check." "Express middleware"
 
-                socketServer = component "Socket.io Server" "WebSocket layer. JWT-authenticated at handshake; role re-read from DB. Users join user:{id} rooms, admins also join 'admin'. Emits message:new, report:new. Relays typing:start / typing:stop between conversation participants." "Socket.io"
+                // Socket.io Server: JWT-authenticated at handshake; role
+                // re-read from DB. Users join user:{id} rooms, admins also
+                // join 'admin'. Emits message:new, report:new. Relays
+                // typing:start / typing:stop between conversation participants.
+                socketServer = component "Socket.io Server" "JWT-authenticated WebSocket; user / admin rooms." "Socket.io"
 
-                authMiddleware = component "Auth Middleware" "Verifies Bearer JWT, attaches req.user. requireAdmin gates admin-only routes." "Express middleware"
+                // Auth Middleware: verifies Bearer JWT, attaches req.user.
+                // requireAdmin gates admin-only routes.
+                authMiddleware = component "Auth Middleware" "Verifies JWT; requireAdmin gate." "Express middleware"
 
-                dbPool = component "Database Pool" "PostgreSQL connection pool. SSL enforced for Supabase." "node-postgres"
+                // Database Pool: PostgreSQL connection pool. SSL enforced for
+                // Supabase.
+                dbPool = component "Database Pool" "PostgreSQL connection pool (SSL)." "node-postgres"
             }
 
-            db = container "Database" "PostgreSQL on Supabase. Tables: profiles (with chat_locked_until), lost_reports (with ticket_number, viewed_by_admin), found_items, messages, claims, chat_logs." "PostgreSQL 15" "Database"
+            // Database: PostgreSQL on Supabase. Tables: profiles (with
+            // chat_locked_until), lost_reports (with ticket_number,
+            // viewed_by_admin), found_items, messages, claims, chat_logs.
+            db = container "Database" "Postgres on Supabase." "PostgreSQL 15" "Database"
 
-            storage = container "Object Storage" "Supabase Storage. Stores found-item images in the found-items bucket; public URLs saved in DB." "Supabase Storage"
+            // Object Storage: Supabase Storage. Stores found-item images
+            // in the found-items bucket; public URLs saved in DB.
+            storage = container "Object Storage" "Found-item images." "Supabase Storage"
         }
 
         // ────────────────────────────────────────────────────────────
         // Context-level relationships
         // ────────────────────────────────────────────────────────────
-        student -> lafSystem "Files lost reports (gets a ticket), chats with Hawk AI, messages admins about own cases" "HTTPS + WSS"
-        admin -> lafSystem "Logs found items, reviews claims, verifies ownership in chat, matches and resolves cases" "HTTPS + WSS"
-        lafSystem -> claudeApi "Sends user prompts plus two tool schemas. The model never receives item names, descriptions, locations, dates, or any PII." "HTTPS / JSON"
+        student -> lafSystem "Files reports, chats, messages admins" "HTTPS + WSS"
+        admin -> lafSystem "Logs items, reviews claims, verifies in chat" "HTTPS + WSS"
+        lafSystem -> claudeApi "Sends prompts + 2 tool schemas; no PII" "HTTPS / JSON"
 
         // ────────────────────────────────────────────────────────────
         // Container-level relationships
@@ -85,50 +141,50 @@ workspace "Lost & Found Portal" "Architectural C4 model for the Hunter College L
         student -> webApp "Uses" "HTTPS"
         admin -> webApp "Uses" "HTTPS"
 
-        webApp -> api "REST API calls + multipart uploads" "JSON over HTTPS"
-        webApp -> api "Real-time channel: receives message:new, report:new, typing:start/stop; emits typing events while user types" "WebSocket (Socket.io)"
+        webApp -> api "REST + multipart uploads" "JSON / HTTPS"
+        webApp -> api "Real-time: message:new, report:new, typing:*" "WSS / Socket.io"
 
-        api -> db "Reads from and writes to" "SQL over TCP/TLS"
-        api -> storage "Uploads images and reads public URLs" "HTTPS"
-        api -> claudeApi "Calls messages.create with two tool definitions. Server runs the parameterized queries when the model invokes a tool; model receives only a boolean (search) or success ack (submit_claim)." "HTTPS / JSON"
+        api -> db "Reads / writes" "SQL / TLS"
+        api -> storage "Uploads images, reads URLs" "HTTPS"
+        api -> claudeApi "messages.create with 2 tool schemas; tools run server-side" "HTTPS / JSON"
 
         // ────────────────────────────────────────────────────────────
         // Component-level relationships (inside the API)
         // ────────────────────────────────────────────────────────────
-        webApp -> authComponent     "POST /api/auth/{register,login} · GET /api/auth/me" "JSON / HTTPS"
-        webApp -> reportsComponent  "GET / POST / PATCH /api/reports/*" "JSON / HTTPS"
-        webApp -> foundItemsComponent "GET / POST /api/found-items" "JSON or multipart / HTTPS"
-        webApp -> messagesComponent "GET / POST /api/messages/*" "JSON / HTTPS"
-        webApp -> claimsComponent   "GET / PATCH /api/claims/*" "JSON / HTTPS"
-        webApp -> chatComponent     "POST /api/chat" "JSON / HTTPS"
-        webApp -> socketServer      "Opens authenticated WebSocket; emits typing events" "WS + JWT in handshake"
+        webApp -> authComponent     "POST /api/auth/* · GET /api/auth/me" "HTTPS"
+        webApp -> reportsComponent  "GET / POST / PATCH /api/reports/*" "HTTPS"
+        webApp -> foundItemsComponent "GET / POST /api/found-items" "HTTPS"
+        webApp -> messagesComponent "GET / POST /api/messages/*" "HTTPS"
+        webApp -> claimsComponent   "GET / PATCH /api/claims/*" "HTTPS"
+        webApp -> chatComponent     "POST /api/chat" "HTTPS"
+        webApp -> socketServer      "Authenticated WebSocket + typing" "WSS + JWT"
 
         authMiddleware -> authComponent       "Protects /me"
-        authMiddleware -> reportsComponent    "Protects all routes; requireAdmin on match/unmatch/resolve/viewed"
-        authMiddleware -> foundItemsComponent "Protects all routes; requireAdmin on writes"
-        authMiddleware -> messagesComponent   "Protects all routes"
-        authMiddleware -> claimsComponent     "requireAdmin on all routes (except student's own claim fetch)"
+        authMiddleware -> reportsComponent    "Protects; requireAdmin on writes"
+        authMiddleware -> foundItemsComponent "Protects; requireAdmin on writes"
+        authMiddleware -> messagesComponent   "Protects"
+        authMiddleware -> claimsComponent     "requireAdmin"
         authMiddleware -> chatComponent       "Protects POST /api/chat"
 
-        chatLimitMiddleware -> chatComponent  "Applied before handler. Returns 403 on lockout, 429 on daily limit."
+        chatLimitMiddleware -> chatComponent  "403 lockout / 429 daily"
 
-        authComponent       -> dbPool "Reads/writes profiles"
-        reportsComponent    -> dbPool "Reads/writes lost_reports (+ found_items in transactions)"
-        foundItemsComponent -> dbPool "Reads/writes found_items"
-        messagesComponent   -> dbPool "Reads/writes messages"
-        claimsComponent     -> dbPool "Reads/writes claims (+ profiles.chat_locked_until on fraud reject)"
-        chatComponent       -> dbPool "Reads: existence check on found_items (boolean only). Writes: claims (via submit_claim), chat_logs (every turn)."
-        chatLimitMiddleware -> dbPool "Reads profiles.chat_locked_until on each chat request"
+        authComponent       -> dbPool "profiles"
+        reportsComponent    -> dbPool "lost_reports"
+        foundItemsComponent -> dbPool "found_items"
+        messagesComponent   -> dbPool "messages"
+        claimsComponent     -> dbPool "claims + chat_locked_until"
+        chatComponent       -> dbPool "boolean check + writes claims / chat_logs"
+        chatLimitMiddleware -> dbPool "reads chat_locked_until"
 
         dbPool -> db "Runs SQL" "TCP/TLS"
 
-        foundItemsComponent -> storage "Uploads image buffers; stores returned public URL" "HTTPS"
+        foundItemsComponent -> storage "Uploads images" "HTTPS"
 
-        reportsComponent  -> socketServer "Emits report:new to 'admin' room after a lost report is inserted"
-        messagesComponent -> socketServer "Emits message:new to admin + user:{studentId} rooms after each insert"
-        claimsComponent   -> messagesComponent "Inserts a ticketed system message on approve/reject (transactional)"
+        reportsComponent  -> socketServer "Emits report:new to admin room"
+        messagesComponent -> socketServer "Emits message:new"
+        claimsComponent   -> messagesComponent "Inserts system message on approve / reject"
 
-        chatComponent -> claudeApi "Tool-use loop. Sends conversation + two tool schemas. Receives text or tool-call requests; never grants raw query power to the model." "HTTPS / JSON"
+        chatComponent -> claudeApi "Tool-use loop; model never gets raw query power" "HTTPS / JSON"
     }
 
     views {
